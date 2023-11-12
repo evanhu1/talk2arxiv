@@ -1,0 +1,10 @@
+{
+  "python.analysis.extraPaths": [
+    "/Users/evanhu/.vscode/extensions/continue.continue-0.0.413-darwin-x64",
+    "/Users/evanhu/.cursor/extensions/continue.continue-0.0.412-darwin-x64"
+  ],
+  "python.autoComplete.extraPaths": [
+    "/Users/evanhu/.vscode/extensions/continue.continue-0.0.413-darwin-x64",
+    "/Users/evanhu/.cursor/extensions/continue.continue-0.0.412-darwin-x64"
+  ]
+}
