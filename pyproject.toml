@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "talk2arxiv"
+version = "0.1.0"
+description = ""
+authors = ["Evan Hu <evanhu@berkeley.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.0.0"
+chromadb = "^0.4.17"
+cohere = "^4.34"
+unstructured = "^0.10.30"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

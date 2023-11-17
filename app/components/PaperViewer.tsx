@@ -1,14 +1,16 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 
-interface PaperViewerProps {
-  url: string;
-}
+const PaperViewer: React.FC = () => {
+  const [paperId, setPaperId] = useState<string>("");
 
-const PaperViewer: React.FC<PaperViewerProps> = ({ url }) => {
+  useEffect(() => {
+    setPaperId(window.location.pathname.substring(1));
+  }, []);
+
   return (
     <div className="flex justify-center h-screen grow ">
       <iframe
-        src={url}
+        src={`https://arxiv.org/${paperId}`}
         className="w-full h-full"
       ></iframe>
     </div>

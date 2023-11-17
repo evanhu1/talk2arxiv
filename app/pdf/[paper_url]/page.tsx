@@ -30,36 +30,30 @@ export default function Home() {
   useEffect(() => {
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('mousemove', handleMouseMove);
-    
+
     return () => {
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, [handleMouseUp, handleMouseMove]);
 
-  const paperId = window.location.pathname.substring(1);
-  console.log(paperId)
-
   return (
-    <div className="flex text-center flex-col">
-      <div className="flex flex-row place-content-center space-x-1">
-        <div className="flex flex-row relative">
-          <div
-            className="flex flex-col mx-12"
-            ref={messageFormRef}
-            style={{ width: `${messageFormWidth}px` }}
-          >
-            <h1 className="text-4xl font-bold my-6">Talk2Arxiv</h1>
-            <MessageForm />
-          </div>
-          <div
-            className="w-1 cursor-ew-resize bg-gray-400 h-12 rounded my-auto absolute top-0 bottom-0 right-10"
-            onMouseDown={handleMouseDown}
-          />
+    <div className="flex flex-col md:flex-row place-content-center space-y-1 md:space-y-0 md:space-x-1">
+      <div className="flex flex-col relative md:min-h-screen place-items-center">
+        <div
+          className="flex flex-col mx-3 md:mx-12 my-4 h-full place-items-center place-content-center"
+          ref={messageFormRef}
+          style={{ width: `${messageFormWidth}px` }}
+        >
+          <h1 className="text-2xl md:text-4xl font-bold my-3 md:my-6">Talk2Arxiv</h1>
+          <MessageForm />
         </div>
-        
-        <PaperView url={`https://arxiv.org/${paperId}`}/>
+        <div
+          className="w-1 cursor-ew-resize bg-gray-400 h-12 rounded my-auto absolute top-0 bottom-0 right-10 hidden md:block"
+          onMouseDown={handleMouseDown}
+        />
       </div>
+      <PaperView />
     </div>
   )
 }
