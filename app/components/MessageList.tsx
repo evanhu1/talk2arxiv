@@ -17,7 +17,7 @@ const MessagesDisplay: React.FC<MessagesDisplayProps> = ({ messages }) => {
   }, [messages]);
 
   return (
-    <div className="overflow-y-auto mb-4 flex-grow" ref={messagesEndRef}>
+    <div className="overflow-y-auto mb-4 h-full" ref={messagesEndRef}>
       {messages.map((msg: Message, index: any) => (
         <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-start' : 'items-end'}`}>
           <span className={`text-xs ${msg.sender === 'user' ? 'text-blue-500' : 'text-green-500'}`}>{msg.sender === 'user' ? 'User' : 'bot'}</span>

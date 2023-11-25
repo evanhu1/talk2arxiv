@@ -38,18 +38,16 @@ export default function Home() {
   }, [handleMouseUp, handleMouseMove]);
 
   return (
-    <div className="flex flex-col md:flex-row place-content-center space-y-1 md:space-y-0 md:space-x-1">
-      <div className="flex flex-col relative md:min-h-screen place-items-center">
+    <div className="flex flex-col md:flex-row place-content-center space-y-1 md:space-y-0 md:space-x-1 md:h-screen">
+      <div
+        className="flex relative flex-col md:h-full mx-3 md:mx-12 place-items-center"
+        ref={messageFormRef}
+        style={{ width: `${messageFormWidth}px` }}
+      >
+        <h1 className="text-2xl md:text-4xl font-bold md:my-4">Talk2Arxiv</h1>
+        <MessageForm />
         <div
-          className="flex flex-col mx-3 md:mx-12 my-4 h-full place-items-center place-content-center"
-          ref={messageFormRef}
-          style={{ width: `${messageFormWidth}px` }}
-        >
-          <h1 className="text-2xl md:text-4xl font-bold my-3 md:my-6">Talk2Arxiv</h1>
-          <MessageForm />
-        </div>
-        <div
-          className="w-1 cursor-ew-resize bg-gray-400 h-12 rounded my-auto absolute top-0 bottom-0 right-10 hidden md:block"
+          className="w-1 cursor-ew-resize bg-gray-400 h-12 rounded my-auto absolute top-12 bottom-0 -right-2 hidden md:block"
           onMouseDown={handleMouseDown}
         />
       </div>
