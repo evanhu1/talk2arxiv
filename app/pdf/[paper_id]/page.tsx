@@ -3,10 +3,12 @@ import PaperView from '../../components/PaperViewer';
 import MessageForm from '../../components/MessageForm';
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-export default function Home() {
+export default function Page({ params }: { params: { paper_id: string } }) {
   const [messageFormWidth, setMessageFormWidth] = useState(400);
   const messageFormRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef(false);
+
+  const paper_id = params.paper_id;
 
   const handleMouseDown = useCallback(() => {
     resizeRef.current = true;
@@ -45,13 +47,13 @@ export default function Home() {
         style={{ width: `${messageFormWidth}px` }}
       >
         <h1 className="text-2xl md:text-4xl font-bold md:my-4">Talk2Arxiv</h1>
-        <MessageForm />
+        <MessageForm paper_id={paper_id} />
         <div
           className="w-1 cursor-ew-resize bg-gray-400 h-12 rounded my-auto absolute top-12 bottom-0 -right-2 hidden md:block"
           onMouseDown={handleMouseDown}
         />
       </div>
-      <PaperView />
+      <PaperView paper_id={paper_id} />
     </div>
   )
 }

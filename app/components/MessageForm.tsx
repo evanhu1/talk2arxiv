@@ -5,12 +5,12 @@ import OpenAI from "openai";
 import { Message, LLMStatus } from "../../utils/types";
 import { constructPrompt } from "../../utils/llmtools";
 
-const MessageForm = () => {
+const MessageForm = ({ paper_id }: { paper_id: string }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState('');
   const [llmStatus, setLlmStatus] = useState(LLMStatus.IDLE);
   const [openAIKey, setOpenAIKey] = useState('');
-  const GROBID_URL = 'http://localhost:8070/api/';
+  const GROBID_URL = 'http://localhost:8070/api';
 
   const memoizedOpenAI = useMemo(() => {
     return new OpenAI({apiKey: openAIKey, dangerouslyAllowBrowser: true });
@@ -21,23 +21,20 @@ const MessageForm = () => {
     if (cachedApiKey) {
       setOpenAIKey(cachedApiKey);
     }
-    const id = window.location.pathname.substring(1);
-    const savedMessages = localStorage.getItem(id);
+    const savedMessages = localStorage.getItem(paper_id);
 
     if (savedMessages) {
       setMessages(JSON.parse(savedMessages));
     }
-  }, []);
+  }, [paper_id]);
 
   useEffect(() => {
-    const id = window.location.pathname.substring(1);
-    localStorage.setItem(id, JSON.stringify(messages));
-  }, [messages]);
+    localStorage.setItem(paper_id, JSON.stringify(messages));
+  }, [messages, paper_id]);
 
   useEffect(() => {
     const loadMessagesAndEmbedPDF = async () => {
       setLlmStatus(LLMStatus.LOADING);
-      const id = window.location.pathname.substring(1);
       
       try {
         const response = await fetch(GROBID_URL + '/embeddings/insert', {
@@ -45,7 +42,7 @@ const MessageForm = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ "pdfId": id }),
+          body: JSON.stringify({ "pdfId": paper_id }),
         });
         await response.json();
       } catch (err) {
@@ -56,7 +53,7 @@ const MessageForm = () => {
     };
 
     loadMessagesAndEmbedPDF();
-  }, []);
+  }, [paper_id]);
 
   const getBotReply = async (message: string) => {
     setLlmStatus(LLMStatus.THINKING);
@@ -108,7 +105,7 @@ const MessageForm = () => {
   const messageInputRef = useRef<HTMLInputElement>(null);
   
   return (
-    <div className={`rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-shrink flex flex-col ${llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""}`}>
+    <div className={`rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""}`}>
       {llmStatus === LLMStatus.LOADING && (
         <div className="absolute inset-0 flex justify-center items-center">
           <span>Embedding Document...</span>
