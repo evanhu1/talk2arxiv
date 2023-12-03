@@ -1,22 +1,20 @@
 /* eslint-disable @next/next/no-img-element */
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import MessagesDisplay from './MessageList';
 import OpenAI from "openai";
 import { Message, LLMStatus } from "../utils/types";
-import { constructPrompt } from "../utils/llmtools";
+import { constructPrompt, insertPDF } from "../utils/llmtools";
 
 const MessageForm = ({ paper_id }: { paper_id: string }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState('');
   const [llmStatus, setLlmStatus] = useState(LLMStatus.IDLE);
-  const [openAIKey, setOpenAIKey] = useState('');
-  const GROBID_URL = 'http://localhost:8070/api';
+  const [openAIKey, setOpenAIKey] = useState(localStorage.getItem('OPENAI_API_KEY') ?? "");
 
   const memoizedOpenAI = useMemo(() => {
     return new OpenAI({apiKey: openAIKey, dangerouslyAllowBrowser: true });
   }, [openAIKey]);
   
-
   const handleSubmit = async () => {
     if (message.trim() && (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR)) {
       setMessages(messages => [...messages, { text: message, sender: 'user' }]);
@@ -30,16 +28,8 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
   };
 
   useEffect(() => {
-    const cachedApiKey = localStorage.getItem('OPENAI_API_KEY');
-    if (cachedApiKey) {
-      setOpenAIKey(cachedApiKey);
-    }
-    const savedMessages = localStorage.getItem(paper_id);
-
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    }
-  }, [paper_id]);
+    localStorage.setItem('OPENAI_API_KEY', openAIKey);
+  }, [openAIKey]);
 
   useEffect(() => {
     localStorage.setItem(paper_id, JSON.stringify(messages));
@@ -48,29 +38,21 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
   useEffect(() => {
     const loadMessagesAndEmbedPDF = async () => {
       setLlmStatus(LLMStatus.LOADING);
-      
-      try {
-        const response = await fetch(GROBID_URL + '/embeddings/insert', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ "pdfId": paper_id }),
-        });
-        await response.json();
-      } catch (err) {
-        console.error(err);
-      }
-
+      await insertPDF(paper_id);
       setLlmStatus(LLMStatus.IDLE);
     };
+    const savedMessages = localStorage.getItem(paper_id);
+
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    }
 
     loadMessagesAndEmbedPDF();
   }, [paper_id]);
 
   const getBotReply = async (message: string) => {
     setLlmStatus(LLMStatus.THINKING);
-    const prompt = await constructPrompt(message, messages);
+    const prompt = await constructPrompt(message, messages, paper_id);
 
     if (prompt === "") {
       setLlmStatus(LLMStatus.ERROR);
@@ -80,7 +62,7 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
     console.log(prompt);
     const completion = await memoizedOpenAI.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "gpt-3.5-turbo",
+      model: "gpt-3.5-turbo-1106",
       temperature: 0,
     })
     .then((res) => {
@@ -96,6 +78,13 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
   }
 
   const messageInputRef = useRef<HTMLInputElement>(null);
+  document.onkeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && messageInputRef.current === document.activeElement) {
+      const selection = window.getSelection();
+      console.log(selection?.toString());
+      handleSubmit();
+    }
+  };
   
   return (
     <div className={`rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""}`}>
