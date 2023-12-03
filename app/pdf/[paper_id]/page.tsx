@@ -4,7 +4,7 @@ import MessageForm from '../../../components/MessageForm';
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 export default function Page({ params }: { params: { paper_id: string } }) {
-  const [messageFormWidth, setMessageFormWidth] = useState(400);
+  const [messageFormWidth, setMessageFormWidth] = useState(600);
   const messageFormRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef(false);
 

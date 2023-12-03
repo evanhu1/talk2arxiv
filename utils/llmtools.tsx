@@ -16,7 +16,7 @@ ${history}
 ### Question: ${question}
 `
 
-const GROBID_SERVER_URL = "http://localhost:5328";
+const GROBID_SERVER_URL = "http://18.191.167.109:5328";
 
 const insertPDF = async (paper_id: string) => {
   try {

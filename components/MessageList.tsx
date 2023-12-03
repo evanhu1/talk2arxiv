@@ -9,6 +9,7 @@ const MessagesDisplay: React.FC<MessagesDisplayProps> = ({ messages }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
+    console.log(messagesEndRef.current)
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
@@ -17,7 +18,7 @@ const MessagesDisplay: React.FC<MessagesDisplayProps> = ({ messages }) => {
   }, [messages]);
 
   return (
-    <div className="overflow-y-auto mb-4 h-full" ref={messagesEndRef}>
+    <div className="overflow-y-auto mb-4 h-full">
       {messages.map((msg: Message, index: any) => (
         <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-start' : 'items-end'}`}>
           <span className={`text-xs ${msg.sender === 'user' ? 'text-blue-500' : 'text-green-500'}`}>{msg.sender === 'user' ? 'User' : 'bot'}</span>
