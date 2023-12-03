@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import MessagesDisplay from './MessageList';
 import OpenAI from "openai";
 import { Message, LLMStatus } from "../../utils/types";
@@ -16,6 +16,19 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
     return new OpenAI({apiKey: openAIKey, dangerouslyAllowBrowser: true });
   }, [openAIKey]);
   
+
+  const handleSubmit = async () => {
+    if (message.trim() && (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR)) {
+      setMessages(messages => [...messages, { text: message, sender: 'user' }]);
+      setMessage('');
+
+      const reply = await getBotReply(message);
+      if (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR) {
+        setMessages(messages => [...messages, { text: reply, sender: 'bot' }]);
+      }
+    }
+  };
+
   useEffect(() => {
     const cachedApiKey = localStorage.getItem('OPENAI_API_KEY');
     if (cachedApiKey) {
@@ -81,26 +94,6 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
     
     return completion;
   }
-
-  const handleSubmit = async (e: any) => {
-    if (message.trim() && (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR)) {
-      setMessages(messages => [...messages, { text: message, sender: 'user' }]);
-      setMessage('');
-
-      const reply = await getBotReply(message);
-      if (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR) {
-        setMessages(messages => [...messages, { text: reply, sender: 'bot' }]);
-      }
-    }
-  };
-
-  document.onkeydown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && messageInputRef.current === document.activeElement) {
-      const selection = window.getSelection();
-      console.log(selection?.toString());
-      handleSubmit(e as unknown as React.MouseEvent<HTMLButtonElement, MouseEvent>);
-    }
-  };
 
   const messageInputRef = useRef<HTMLInputElement>(null);
   
