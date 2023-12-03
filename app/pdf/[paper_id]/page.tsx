@@ -1,6 +1,6 @@
 "use client"
-import PaperView from '../../components/PaperViewer';
-import MessageForm from '../../components/MessageForm';
+import PaperView from '../../../components/PaperViewer';
+import MessageForm from '../../../components/MessageForm';
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 export default function Page({ params }: { params: { paper_id: string } }) {

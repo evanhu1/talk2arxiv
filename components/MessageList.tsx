@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Message } from '../../utils/types';
+import { Message } from '../utils/types';
 
 interface MessagesDisplayProps {
   messages: Message[];

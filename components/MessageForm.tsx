@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import MessagesDisplay from './MessageList';
 import OpenAI from "openai";
-import { Message, LLMStatus } from "../../utils/types";
-import { constructPrompt } from "../../utils/llmtools";
+import { Message, LLMStatus } from "../utils/types";
+import { constructPrompt } from "../utils/llmtools";
 
 const MessageForm = ({ paper_id }: { paper_id: string }) => {
   const [messages, setMessages] = useState<Message[]>([]);
