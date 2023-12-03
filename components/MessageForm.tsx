@@ -6,7 +6,7 @@ import { Message, LLMStatus } from "../utils/types";
 import { constructPrompt, insertPDF } from "../utils/llmtools";
 
 const MessageForm = ({ paper_id }: { paper_id: string }) => {
-  const [messages, setMessages] = useState<Message[]>(JSON.parse(localStorage.getItem(paper_id) ?? "") ?? []);
+  const [messages, setMessages] = useState<Message[]>(JSON.parse(localStorage.getItem(paper_id) ?? "{}") ?? []);
   const [message, setMessage] = useState('');
   const [llmStatus, setLlmStatus] = useState(LLMStatus.IDLE);
   const [openAIKey, setOpenAIKey] = useState(localStorage.getItem('OPENAI_API_KEY') ?? "");
