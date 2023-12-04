@@ -33,6 +33,22 @@ const insertPDF = async (paper_id: string) => {
   }
 }
 
+const chatOpenAIBackend = async (prompt: string) => {
+  try {
+    const response = await fetch(GROBID_SERVER_URL + '/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ "prompt": prompt }),
+    });
+    return await response.json();
+  } catch (err) {
+    console.error(err);
+    return "";
+  }
+}
+
 const constructPrompt = async (message: string, messages: Message[], paper_id: string) => {
   const userInput = message;
 
@@ -58,4 +74,4 @@ const constructPrompt = async (message: string, messages: Message[], paper_id: s
   return "";
 }
 
-export { constructPrompt, insertPDF };
+export { constructPrompt, insertPDF, chatOpenAIBackend };

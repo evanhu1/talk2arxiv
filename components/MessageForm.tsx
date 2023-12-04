@@ -3,10 +3,10 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import MessagesDisplay from './MessageList';
 import OpenAI from "openai";
 import { Message, LLMStatus } from "../utils/types";
-import { constructPrompt, insertPDF } from "../utils/llmtools";
+import { constructPrompt, insertPDF, chatOpenAIBackend } from "../utils/llmtools";
 
 const MessageForm = ({ paper_id }: { paper_id: string }) => {
-  const [messages, setMessages] = useState<Message[]>(JSON.parse(localStorage.getItem(paper_id) ?? "{}") ?? []);
+  const [messages, setMessages] = useState<Message[]>(localStorage.getItem(paper_id) ? JSON.parse(localStorage.getItem(paper_id) ?? "{}") : []);
   const [message, setMessage] = useState('');
   const [llmStatus, setLlmStatus] = useState(LLMStatus.IDLE);
   const [openAIKey, setOpenAIKey] = useState(localStorage.getItem('OPENAI_API_KEY') ?? "");
@@ -54,21 +54,29 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
       return "Embedding server is down. Please try again later."
     }
     
-    const completion = await memoizedOpenAI.chat.completions.create({
-      messages: [{ role: "user", content: prompt }],
-      model: "gpt-3.5-turbo-1106",
-      temperature: 0,
-    })
-    .then((res) => {
+    if (openAIKey !== "") {
+      return await memoizedOpenAI.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: "gpt-3.5-turbo-1106",
+        temperature: 0,
+      })
+      .then((res) => {
+        setLlmStatus(LLMStatus.SUCCESS);
+        return res.choices[0].message.content
+      })
+      .catch((err) => {
+        setLlmStatus(LLMStatus.ERROR);
+        return err.toString();
+      });
+    } else {
+      const response = await chatOpenAIBackend(prompt)
+      if (response === "") {
+        setLlmStatus(LLMStatus.ERROR);
+        return "OpenAI is unreachable. Please try again later."
+      }
       setLlmStatus(LLMStatus.SUCCESS);
-      return res.choices[0].message.content
-    })
-    .catch((err) => {
-      setLlmStatus(LLMStatus.ERROR);
-      return err.toString();
-    });
-    
-    return completion;
+      return response;
+    }
   }
 
   const messageInputRef = useRef<HTMLInputElement>(null);
