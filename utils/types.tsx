@@ -1,7 +1,6 @@
 interface Message {
   sender: 'user' | 'bot';
   text: string;
-  
 }
 interface MessageListProps {
   messages: Message[];

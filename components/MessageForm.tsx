@@ -1,26 +1,21 @@
 /* eslint-disable @next/next/no-img-element */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import MessagesDisplay from './MessageList';
-import OpenAI from "openai";
 import { Message, LLMStatus } from "../utils/types";
-import { constructPrompt, insertPDF, chatOpenAIBackend } from "../utils/llmtools";
+import { insertPDF, getBotReply } from "../utils/llmtools";
 
 const MessageForm = ({ paper_id }: { paper_id: string }) => {
-  const [messages, setMessages] = useState<Message[]>(localStorage.getItem(paper_id) ? JSON.parse(localStorage.getItem(paper_id) ?? "{}") : []);
+  const [messages, setMessages] = useState<Message[]>(localStorage.getItem(paper_id) ? JSON.parse(localStorage.getItem(paper_id) ?? "{}") : [{sender: 'bot', text: "Hello! Ask me any question about this paper!"}]);
   const [message, setMessage] = useState('');
   const [llmStatus, setLlmStatus] = useState(LLMStatus.IDLE);
   const [openAIKey, setOpenAIKey] = useState(localStorage.getItem('OPENAI_API_KEY') ?? "");
 
-  const memoizedOpenAI = useMemo(() => {
-    return new OpenAI({apiKey: openAIKey, dangerouslyAllowBrowser: true });
-  }, [openAIKey]);
-  
   const handleSubmit = async () => {
     if (message.trim() && (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR)) {
       setMessages(messages => [...messages, { text: message, sender: 'user' }]);
       setMessage('');
 
-      const reply = await getBotReply(message);
+      const reply = await getBotReply(message, messages, paper_id, setLlmStatus, openAIKey);
       if (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR) {
         setMessages(messages => [...messages, { text: reply, sender: 'bot' }]);
       }
@@ -45,40 +40,6 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
     loadMessagesAndEmbedPDF();
   }, [paper_id]);
 
-  const getBotReply = async (message: string) => {
-    setLlmStatus(LLMStatus.THINKING);
-    const prompt = await constructPrompt(message, messages, paper_id);
-
-    if (prompt === "") {
-      setLlmStatus(LLMStatus.ERROR);
-      return "Embedding server is down. Please try again later."
-    }
-    
-    if (openAIKey !== "") {
-      return await memoizedOpenAI.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
-        model: "gpt-3.5-turbo-1106",
-        temperature: 0,
-      })
-      .then((res) => {
-        setLlmStatus(LLMStatus.SUCCESS);
-        return res.choices[0].message.content
-      })
-      .catch((err) => {
-        setLlmStatus(LLMStatus.ERROR);
-        return err.toString();
-      });
-    } else {
-      const response = await chatOpenAIBackend(prompt)
-      if (response === "") {
-        setLlmStatus(LLMStatus.ERROR);
-        return "OpenAI is unreachable. Please try again later."
-      }
-      setLlmStatus(LLMStatus.SUCCESS);
-      return response;
-    }
-  }
-
   const messageInputRef = useRef<HTMLInputElement>(null);
   document.onkeydown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' && messageInputRef.current === document.activeElement) {
@@ -89,7 +50,13 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
   };
   
   return (
-    <div className={`rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""}`}>
+    <div className={`relative rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""}`}>
+      <button
+        className="absolute -top-[68px] right-0 m-4 bg-red-500 text-white p-2 rounded text-sm hover:bg-red-700"
+        onClick={() => setMessages([])}
+      >
+        Clear History
+      </button>
       {llmStatus === LLMStatus.LOADING && (
         <div className="absolute inset-0 flex justify-center items-center">
           <span>Embedding Document...</span>
@@ -112,7 +79,7 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
           placeholder="Type your message here..."
           ref={messageInputRef}
         />
-        <button type="submit" className="bg-blue-600 text-white p-2 ml-4 h-full rounded" onClick={handleSubmit}>
+        <button type="submit" className="bg-blue-600 hover:bg-blue-800 text-white p-2 ml-4 h-full rounded" onClick={handleSubmit}>
           Send
         </button>
       </div>

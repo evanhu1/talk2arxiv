@@ -1,4 +1,5 @@
-import { Message } from './types';
+import { Message, LLMStatus } from './types';
+import OpenAI from "openai";
 
 const PROMPT_TEMPLATE = (history: string, context: string[], question: string, paperTitle: string) => `
 You are a chatbot built to help readers understand research papers. Context information and chat history is provided below. Given the context information and not prior knowledge, provide detailed answer to the question. Use the context information whenever possible. ${paperTitle && "The current paper is " + paperTitle}}.
@@ -16,7 +17,43 @@ ${history}
 ### Question: ${question}
 `
 
-const GROBID_SERVER_URL = "http://18.191.167.109:5328";
+const GROBID_SERVER_URL = "https://server.talk2arxiv.org";
+// const GROBID_SERVER_URL = "http://18.191.167.109:5328";
+
+const getBotReply = async (message: string, messages: Message[], paper_id: string, setLlmStatus: any, openAIKey: string) => {
+  setLlmStatus(LLMStatus.THINKING);
+  const prompt = await constructPrompt(message, messages, paper_id);
+  const memoizedOpenAI = new OpenAI({apiKey: openAIKey, dangerouslyAllowBrowser: true });
+
+  if (prompt === "") {
+    setLlmStatus(LLMStatus.ERROR);
+    return "Embedding server is down. Please try again later."
+  }
+  
+  if (openAIKey !== "") {
+    return await memoizedOpenAI.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "gpt-3.5-turbo-1106",
+      temperature: 0,
+    })
+    .then((res) => {
+      setLlmStatus(LLMStatus.SUCCESS);
+      return res.choices[0].message.content
+    })
+    .catch((err) => {
+      setLlmStatus(LLMStatus.ERROR);
+      return err.toString();
+    });
+  } else {
+    const response = await chatOpenAIBackend(prompt)
+    if (response === "") {
+      setLlmStatus(LLMStatus.ERROR);
+      return "OpenAI is unreachable. Please try again later."
+    }
+    setLlmStatus(LLMStatus.SUCCESS);
+    return response;
+  }
+}
 
 const insertPDF = async (paper_id: string) => {
   try {
@@ -74,4 +111,4 @@ const constructPrompt = async (message: string, messages: Message[], paper_id: s
   return "";
 }
 
-export { constructPrompt, insertPDF, chatOpenAIBackend };
+export { constructPrompt, insertPDF, chatOpenAIBackend, getBotReply };
