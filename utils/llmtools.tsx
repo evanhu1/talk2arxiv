@@ -22,7 +22,7 @@ const GROBID_SERVER_URL = "https://server.talk2arxiv.org";
 
 const getBotReply = async (message: string, messages: Message[], paper_id: string, setLlmStatus: any, openAIKey: string) => {
   setLlmStatus(LLMStatus.THINKING);
-  const prompt = await constructPrompt(message, messages, paper_id);
+  const prompt = await getContextAndConstructPrompt(message, messages, paper_id);
   const memoizedOpenAI = new OpenAI({apiKey: openAIKey, dangerouslyAllowBrowser: true });
 
   if (prompt === "") {
@@ -86,10 +86,10 @@ const chatOpenAIBackend = async (prompt: string) => {
   }
 }
 
-const constructPrompt = async (message: string, messages: Message[], paper_id: string) => {
+const getContextAndConstructPrompt = async (message: string, messages: Message[], paper_id: string) => {
   const userInput = message;
 
-  const lastFiveMessages = messages.slice(Math.max(messages.length - 5, 0)).reduce((acc, msg) => {
+  const lastMessages = messages.slice(Math.max(messages.length - 4, 0)).reduce((acc, msg) => {
     if (msg.sender === 'user') {
       return acc + `User: ${msg.text}\nAI: `;
     } else {
@@ -97,18 +97,31 @@ const constructPrompt = async (message: string, messages: Message[], paper_id: s
     }
   }, '');
 
-  const context = await fetch(GROBID_SERVER_URL + '/query', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ "query": userInput, "paper_id": paper_id }),
-  }).then((res) => res.json()).catch((err) => {console.log(err); return { status: 'error', data: [] }});
+  let context;
+  let attempts = 2;
+  while (attempts > 0) {
+    try {
+      context = await fetch(GROBID_SERVER_URL + '/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ "query": userInput, "paper_id": paper_id }),
+      }).then((res) => res.json());
+      break; // Break the loop if fetch is successful
+    } catch (err) {
+      console.log(err);
+      attempts--;
+      if (attempts === 0) {
+        context = { status: 'error', data: [] };
+      }
+    }
+  }
 
   if (context.status === 'success') {
-    return PROMPT_TEMPLATE(lastFiveMessages, context.data, userInput, context.paper_title);
+    return PROMPT_TEMPLATE(lastMessages, context.data, userInput, context.paper_title);
   }
   return "";
 }
 
-export { constructPrompt, insertPDF, chatOpenAIBackend, getBotReply };
+export { getContextAndConstructPrompt as constructPrompt, insertPDF, chatOpenAIBackend, getBotReply };
