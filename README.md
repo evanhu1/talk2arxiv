@@ -2,6 +2,8 @@
 ## Talk to any ArXiv paper using ChatGPT!
 Talk2Arxiv is an innovative open-source RAG (Retrieval-Augmented Generation) system specially built for academic paper PDFs. Powered by [talk2arxiv-server](https://github.com/evanhu1/talk2arxiv-server)
 
+![Screenshot](/images/screenshot.png?raw=true "Screenshot")
+
 ## Usage
 Simply prepend any arxiv.org link with 'talk2' to load the paper into a responsive RAG chat application (e.g. www.arxiv.org/pdf/1706.03762.pdf -> www.talk2arxiv.org/pdf/1706.03762.pdf).
 
