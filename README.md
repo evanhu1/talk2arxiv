@@ -13,16 +13,13 @@ Just run `yarn` and then `yarn run dev`.
 ## Features
 - PDF Parsing: Utilizes GROBID for efficient text extraction from PDFs.
 - Chunking Algorithm: Custom-built algorithm for optimal text chunking.
-- Text Embedding: Implements Cohere's EmbedV3 model for accurate text embeddings.
+- Text Embedding: Uses Cohere's EmbedV3 model for accurate text embeddings.
 - Vector Database Integration: Uses Pinecone for storing and querying embeddings.
 - Contextual Relevance: Employs a reranking process to select the most relevant content based on user input.
 
 ## Technologies Used
 Frontend: Developed using Typescript, ReactJS, TailwindCSS, and NextJS.
 Backend: Powered by [talk2arxiv-server](https://github.com/evanhu1/talk2arxiv-server), which uses Flask, Gunicorn, and Nginx.
-
-## Credits
-SciPDF Parser: For their invaluable PDF parsing tool. SciPDF
 
 ## Roadmap
 - Improved chunking strategy
