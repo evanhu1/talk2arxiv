@@ -50,7 +50,7 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
   };
   
   return (
-    <div className={`relative rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""}`}>
+    <div className={`absolute md:relative rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""}`}>
       <button
         className="absolute -top-[68px] right-0 m-4 bg-red-500 text-white p-2 rounded text-sm hover:bg-red-700"
         onClick={() => setMessages([])}
