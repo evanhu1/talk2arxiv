@@ -47,7 +47,7 @@ export default function Page({ params }: { params: { paper_id: string } }) {
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row place-content-center space-y-1 md:space-y-0 md:space-x-1 h-screen">
+    <div className="flex flex-col md:flex-row place-content-center space-y-1 md:space-y-0 h-screen">
       <button
         className="md:hidden fixed right-0 top-1/2 z-10 bg-blue-500 text-white p-2 rounded-l"
         onClick={toggleMessageFormVisibility}
@@ -55,9 +55,7 @@ export default function Page({ params }: { params: { paper_id: string } }) {
         {isMessageFormVisible ? 'Close' : 'Open'}
       </button>
       <div
-        className={`flex relative flex-col md:h-full mx-3 md:mx-12 place-items-center transition-transform duration-300 ${
-          isMessageFormVisible ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`flex relative flex-col mx-4 place-items-center`}
         ref={messageFormRef}
         style={{ width: `${messageFormWidth}px` }}
       >
