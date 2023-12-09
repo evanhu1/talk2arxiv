@@ -5,7 +5,9 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 export default function Page({ params }: { params: { paper_id: string } }) {
   const [messageFormWidth, setMessageFormWidth] = useState(600);
-  const [isMessageFormVisible, setIsMessageFormVisible] = useState(false);
+  const [isMessageFormVisible, setIsMessageFormVisible] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > 768 : true
+  );
   const messageFormRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef(false);
 
