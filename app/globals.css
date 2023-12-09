@@ -8,6 +8,27 @@
   --background-end-rgb: 0, 0, 0;
 }
 
+@layer utilities {
+  .scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 20px;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: #5b677f;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    background: #111723;
+    border-radius: 100vh;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #5e393979;
+  }
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
