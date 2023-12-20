@@ -9,6 +9,11 @@ You are a chatbot built to help readers understand research papers. Context info
 ${context}
 ---------------------
 
+### Chat History:
+---------------------
+${history}
+---------------------
+
 ### Question: ${question}
 `
 
@@ -85,7 +90,7 @@ const chatOpenAIBackend = async (prompt: string) => {
 const getContextAndConstructPrompt = async (message: string, messages: Message[], paper_id: string) => {
   const userInput = message;
 
-  const lastMessages = messages.slice(Math.max(messages.length - 4, 0)).reduce((acc, msg) => {
+  const lastMessages = messages.slice(Math.max(messages.length - 2, 0)).reduce((acc, msg) => {
     if (msg.sender === 'user') {
       return acc + `User: ${msg.text}\nAI: `;
     } else {
