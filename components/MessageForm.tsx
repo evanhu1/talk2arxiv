@@ -1,29 +1,61 @@
 /* eslint-disable @next/next/no-img-element */
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import MessagesDisplay from './MessageList';
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import MessagesDisplay from "./MessageList";
 import { Message, LLMStatus } from "../utils/types";
 import { insertPDF, getBotReply } from "../utils/llmtools";
 
 const MessageForm = ({ paper_id }: { paper_id: string }) => {
-  const [messages, setMessages] = useState<Message[]>(localStorage.getItem(paper_id) ? JSON.parse(localStorage.getItem(paper_id) ?? "{}") : [{sender: 'bot', text: "Hello! Ask me any question about this paper!"}]);
-  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<Message[]>(
+    localStorage.getItem(paper_id)
+      ? JSON.parse(localStorage.getItem(paper_id) ?? "{}")
+      : [
+          {
+            sender: "bot",
+            text: "Hello! Ask me any question about this paper! To refer to a specific section of the paper, make sure to say 'Section ___' where ___ is the name of the section, not the number.",
+          },
+        ]
+  );
+  const [message, setMessage] = useState("");
   const [llmStatus, setLlmStatus] = useState(LLMStatus.IDLE);
-  const [openAIKey, setOpenAIKey] = useState(localStorage.getItem('OPENAI_API_KEY') ?? "");
+  const [openAIKey, setOpenAIKey] = useState(
+    localStorage.getItem("OPENAI_API_KEY") ?? ""
+  );
 
   const handleSubmit = async () => {
-    if (message.trim() && (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR)) {
-      setMessages(messages => [...messages, { text: message, sender: 'user' }]);
-      setMessage('');
+    if (
+      message.trim() &&
+      (llmStatus === LLMStatus.IDLE ||
+        llmStatus === LLMStatus.SUCCESS ||
+        llmStatus === LLMStatus.ERROR)
+    ) {
+      setMessages((messages) => [
+        ...messages,
+        { text: message, sender: "user" },
+      ]);
+      setMessage("");
 
-      const reply = await getBotReply(message, messages, paper_id, setLlmStatus, openAIKey);
-      if (llmStatus === LLMStatus.IDLE || llmStatus === LLMStatus.SUCCESS || llmStatus === LLMStatus.ERROR) {
-        setMessages(messages => [...messages, { text: reply, sender: 'bot' }]);
+      const reply = await getBotReply(
+        message,
+        messages,
+        paper_id,
+        setLlmStatus,
+        openAIKey
+      );
+      if (
+        llmStatus === LLMStatus.IDLE ||
+        llmStatus === LLMStatus.SUCCESS ||
+        llmStatus === LLMStatus.ERROR
+      ) {
+        setMessages((messages) => [
+          ...messages,
+          { text: reply, sender: "bot" },
+        ]);
       }
     }
   };
 
   useEffect(() => {
-    localStorage.setItem('OPENAI_API_KEY', openAIKey);
+    localStorage.setItem("OPENAI_API_KEY", openAIKey);
   }, [openAIKey]);
 
   useEffect(() => {
@@ -42,18 +74,28 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
 
   const messageInputRef = useRef<HTMLInputElement>(null);
   document.onkeydown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && messageInputRef.current === document.activeElement) {
+    if (
+      e.key === "Enter" &&
+      messageInputRef.current === document.activeElement
+    ) {
       const selection = window.getSelection();
       console.log(selection?.toString());
       handleSubmit();
     }
   };
-  
+
   return (
-    <div className={`absolute md:relative rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""}`}>
+    <div
+      className={`absolute md:relative rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${
+        llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""
+      }`}
+    >
       <button
         className="absolute -top-[68px] right-0 m-4 bg-red-500 text-white p-2 rounded text-sm hover:bg-red-700"
-        onClick={() => setMessages([])}
+        onClick={() => setMessages([{
+          sender: "bot",
+          text: "Hello! Ask me any question about this paper! To refer to a specific section of the paper, make sure to say 'Section ___' where ___ is the name of the section, not the number.",
+        },])}
       >
         Clear History
       </button>
@@ -79,12 +121,21 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
           placeholder="Type your message here..."
           ref={messageInputRef}
         />
-        <button type="submit" className="bg-blue-600 hover:bg-blue-800 text-white p-2 ml-4 h-full rounded" onClick={handleSubmit}>
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-800 text-white p-2 ml-4 h-full rounded"
+          onClick={handleSubmit}
+        >
           Send
         </button>
       </div>
       <div className="flex items-center w-full mt-4">
-        <img className="h-5 w-10" src="/key.svg" style={{ filter: 'invert(90%)' }} alt="key"></img>
+        <img
+          className="h-5 w-10"
+          src="/key.svg"
+          style={{ filter: "invert(90%)" }}
+          alt="key"
+        ></img>
         <input
           type="password"
           className="p-2 w-full bg-gray-700 text-white rounded outline-none ml-2"

@@ -9,11 +9,6 @@ You are a chatbot built to help readers understand research papers. Context info
 ${context}
 ---------------------
 
-### Chat History:
----------------------
-${history}
----------------------
-
 ### Question: ${question}
 `
 
@@ -23,6 +18,7 @@ const GROBID_SERVER_URL = "https://server.talk2arxiv.org";
 const getBotReply = async (message: string, messages: Message[], paper_id: string, setLlmStatus: any, openAIKey: string) => {
   setLlmStatus(LLMStatus.THINKING);
   const prompt = await getContextAndConstructPrompt(message, messages, paper_id);
+  console.log(prompt);
   const memoizedOpenAI = new OpenAI({apiKey: openAIKey, dangerouslyAllowBrowser: true });
 
   if (prompt === "") {
@@ -98,8 +94,9 @@ const getContextAndConstructPrompt = async (message: string, messages: Message[]
   }, '');
 
   let context;
-  let attempts = 2;
+  let attempts = 4;
   while (attempts > 0) {
+    await new Promise(resolve => setTimeout(resolve, Math.pow(2, 4 - attempts) * 1000));
     try {
       context = await fetch(GROBID_SERVER_URL + '/query', {
         method: 'POST',
@@ -110,7 +107,6 @@ const getContextAndConstructPrompt = async (message: string, messages: Message[]
       }).then((res) => res.json());
       break; // Break the loop if fetch is successful
     } catch (err) {
-      console.log(err);
       attempts--;
       if (attempts === 0) {
         context = { status: 'error', data: [] };
