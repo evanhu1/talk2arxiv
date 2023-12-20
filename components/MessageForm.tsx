@@ -4,7 +4,7 @@ import MessagesDisplay from "./MessageList";
 import { Message, LLMStatus } from "../utils/types";
 import { insertPDF, getBotReply } from "../utils/llmtools";
 
-const DEFAULT_TEXT = "Hello! Ask me any question about this paper! To refer to a specific section of the paper, make sure to say 'Section ___' where ___ is the name of the section, not the number. OpenAI key is also optional for now."
+const DEFAULT_TEXT = "Hello! Ask me any question about this paper! To refer to a specific section of the paper, make sure to say 'Section ___' where ___ is the name of the section, not the number. OpenAI key is also optional for now. Try 'Summarize the section Introduction in simple terms'"
 
 const MessageForm = ({ paper_id }: { paper_id: string }) => {
   const [messages, setMessages] = useState<Message[]>(
