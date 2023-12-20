@@ -4,6 +4,8 @@ import MessagesDisplay from "./MessageList";
 import { Message, LLMStatus } from "../utils/types";
 import { insertPDF, getBotReply } from "../utils/llmtools";
 
+const DEFAULT_TEXT = "Hello! Ask me any question about this paper! To refer to a specific section of the paper, make sure to say 'Section ___' where ___ is the name of the section, not the number. This chatbot has no conversation history. OpenAI key is also not needed for now! Enjoy!."
+
 const MessageForm = ({ paper_id }: { paper_id: string }) => {
   const [messages, setMessages] = useState<Message[]>(
     localStorage.getItem(paper_id)
@@ -11,7 +13,7 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
       : [
           {
             sender: "bot",
-            text: "Hello! Ask me any question about this paper! To refer to a specific section of the paper, make sure to say 'Section ___' where ___ is the name of the section, not the number.",
+            text: DEFAULT_TEXT,
           },
         ]
   );
@@ -94,7 +96,7 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
         className="absolute -top-[68px] right-0 m-4 bg-red-500 text-white p-2 rounded text-sm hover:bg-red-700"
         onClick={() => setMessages([{
           sender: "bot",
-          text: "Hello! Ask me any question about this paper! To refer to a specific section of the paper, make sure to say 'Section ___' where ___ is the name of the section, not the number.",
+          text: DEFAULT_TEXT,
         },])}
       >
         Clear History
