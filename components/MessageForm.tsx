@@ -88,7 +88,7 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
 
   return (
     <div
-      className={`absolute md:relative rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${
+      className={`relative rounded shadow-lg p-4 bg-gray-800 mb-4 w-full min-h-0 flex-auto flex flex-col ${
         llmStatus === LLMStatus.LOADING ? "opacity-50 pointer-events-none" : ""
       }`}
     >

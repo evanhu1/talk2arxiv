@@ -45,7 +45,7 @@ export default function Page({ params }: { params: { paper_id: string } }) {
   }, []);
 
   return (
-    <div className="flex flex-col sm:flex-row place-content-center space-y-1 sm:space-y-0 h-screen">
+    <div className="flex sm:flex-row place-content-center space-y-1 sm:space-y-0 h-screen">
       <button
         className="sm:hidden fixed right-0 top-1/2 z-10 bg-blue-500 text-white p-2 rounded-l"
         onClick={toggleActiveComponent}
@@ -54,11 +54,11 @@ export default function Page({ params }: { params: { paper_id: string } }) {
       </button>
       {activeComponent === 'messageForm' && (
         <div
-          className={`flex absolute top-20 sm:relative sm:top-0 flex-col mx-4 place-items-center`}
+          className={`flex h-screen relative sm:top-0 flex-col mx-4 sm:place-items-center`}
           ref={messageFormRef}
           style={width > 768 ? {"width": `${600}px`} : { "width": '95%' }}
         >
-          <h1 className="text-2xl sm:text-4xl font-bold sm:my-4">Talk2Arxiv</h1>
+          <h1 className="text-4xl font-bold my-4">Talk2Arxiv</h1>
           <MessageForm paper_id={paper_id} />
           <div
             className="w-1 cursor-ew-resize bg-gray-400 h-12 rounded my-auto absolute top-12 bottom-0 -right-2 hidden sm:block"
