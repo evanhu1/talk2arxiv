@@ -4,13 +4,10 @@ import MessageForm from '../../../components/MessageForm';
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 export default function Page({ params }: { params: { paper_id: string } }) {
-  const [messageFormWidth, setMessageFormWidth] = useState(600);
-  const [isMessageFormVisible, setIsMessageFormVisible] = useState(
-    typeof window !== 'undefined' ? window.innerWidth > 768 : true
-  );
+  const [activeComponent, setActiveComponent] = useState('messageForm');
   const messageFormRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef(false);
-
+  const width = window.innerWidth
   const paper_id = params.paper_id;
 
   const handleMouseDown = useCallback(() => {
@@ -25,10 +22,11 @@ export default function Page({ params }: { params: { paper_id: string } }) {
     (e: any) => {
       if (resizeRef.current && messageFormRef.current) {
         const newWidth = e.clientX - messageFormRef.current.getBoundingClientRect().left;
-        setMessageFormWidth(Math.max(newWidth, 100)); // Set a minimum width
+        const messageFormWidth = Math.max(newWidth, 100); // Set a minimum width
+        messageFormRef.current.style.width = `${messageFormWidth}px`;
       }
     },
-    [setMessageFormWidth]
+    []
   );
 
   // Add event listeners for mouse up and mouse move
@@ -42,31 +40,33 @@ export default function Page({ params }: { params: { paper_id: string } }) {
     };
   }, [handleMouseUp, handleMouseMove]);
 
-  const toggleMessageFormVisibility = useCallback(() => {
-    setIsMessageFormVisible((visible) => !visible);
+  const toggleActiveComponent = useCallback(() => {
+    setActiveComponent((current) => (current === 'messageForm' ? 'paperView' : 'messageForm'));
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row place-content-center space-y-1 md:space-y-0 h-screen">
+    <div className="flex flex-col sm:flex-row place-content-center space-y-1 sm:space-y-0 h-screen">
       <button
-        className="md:hidden fixed right-0 top-1/2 z-10 bg-blue-500 text-white p-2 rounded-l"
-        onClick={toggleMessageFormVisibility}
+        className="sm:hidden fixed right-0 top-1/2 z-10 bg-blue-500 text-white p-2 rounded-l"
+        onClick={toggleActiveComponent}
       >
-        {isMessageFormVisible ? 'Close' : 'Open'}
+        {activeComponent === 'messageForm' ? 'View Paper' : 'View Chat'}
       </button>
-      <div
-        className={`flex relative flex-col mx-4 place-items-center`}
-        ref={messageFormRef}
-        style={{ width: `${messageFormWidth}px` }}
-      >
-        <h1 className="text-2xl md:text-4xl font-bold md:my-4">Talk2Arxiv</h1>
-        <MessageForm paper_id={paper_id} />
+      {activeComponent === 'messageForm' && (
         <div
-          className="w-1 cursor-ew-resize bg-gray-400 h-12 rounded my-auto absolute top-12 bottom-0 -right-2 hidden md:block"
-          onMouseDown={handleMouseDown}
-        />
-      </div>
-      <PaperView paper_id={paper_id} />
+          className={`flex absolute top-20 sm:relative sm:top-0 flex-col mx-4 place-items-center`}
+          ref={messageFormRef}
+          style={width > 768 ? {"width": `${600}px`} : { "width": '95%' }}
+        >
+          <h1 className="text-2xl sm:text-4xl font-bold sm:my-4">Talk2Arxiv</h1>
+          <MessageForm paper_id={paper_id} />
+          <div
+            className="w-1 cursor-ew-resize bg-gray-400 h-12 rounded my-auto absolute top-12 bottom-0 -right-2 hidden sm:block"
+            onMouseDown={handleMouseDown}
+          />
+        </div>
+      )}
+      {(width > 768 || activeComponent === 'paperView') && <PaperView paper_id={paper_id} />}
     </div>
   )
 }
