@@ -10,7 +10,7 @@ Just run `yarn` and then `yarn run dev`.
 - PDF Parsing: Utilizes GROBID for efficient text extraction from PDFs.
 - Chunking Algorithm: Custom-built algorithm for optimal text chunking. Chunks by logical section (intro, abstract, authors, etc.) and also utilizes recursive subdivision chunking (chunk at 512 characters, then 256, then 128...)
 - Text Embedding: Uses Cohere's EmbedV3 model for accurate text embeddings.
-- Vector Database Integration: Uses Pinecone for storing and querying embeddings. This also functions to cache research papers so a paper only ever needs to be embedded once.
+- Vector Database Integration: Uses Qdrant for storing and querying embeddings. This also functions to cache research papers so a paper only ever needs to be embedded once.
 - Contextual Relevance: Employs a reranking process to select the most relevant content based on user input.
 
 ## Technologies Used
