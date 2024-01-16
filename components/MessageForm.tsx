@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import MessagesDisplay from "./MessageList";
+import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
+import MessagesDisplay from './MessageList';
 import { Message, LLMStatus } from "../utils/types";
 import { insertPDF, getBotReply } from "../utils/llmtools";
 
@@ -101,6 +102,13 @@ const MessageForm = ({ paper_id }: { paper_id: string }) => {
       >
         Clear History
       </button>
+      <a
+        className="absolute -top-[55px] left-0 ml-4 rounded text-sm"
+        href={`https://github.com/evanhu1/talk2arxiv`}
+        target="_blank"
+      >
+        <Image src="/github.png" alt="github" height="40" width="40" />
+      </a>
       {llmStatus === LLMStatus.LOADING && (
         <div className="absolute inset-0 flex justify-center items-center">
           <span>Embedding Document...</span>
