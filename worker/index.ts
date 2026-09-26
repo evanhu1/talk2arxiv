@@ -1,7 +1,8 @@
 import type { ApiError, ChatRequest, Paper } from '../shared/types'
 import { estimateTokens, MAX_PAPER_TOKENS, paperFitsContext, streamAnswer, validateChatRequest } from './chat'
+import { isPaperId } from '../shared/papers'
 import { getPaperMeta } from './meta'
-import { getPaper, isArxivId, PaperError, type LoadedPaper } from './paper'
+import { getPaper, PaperError, type LoadedPaper } from './paper'
 
 // In production, Vercel hosts the React app and rewrites /api/* to this Worker
 // (see vercel.json). In local dev, Vite serves both from one server.
@@ -13,14 +14,20 @@ export default {
       if (request.method === 'GET' && url.pathname.startsWith('/api/paper/')) {
         const id = decodeURIComponent(url.pathname.slice('/api/paper/'.length))
         const paper = await loadPaper(id, ctx)
-        const body: Paper = { id: paper.id, title: paper.title, sourceUrl: paper.sourceUrl, html: paper.html }
+        const body: Paper = {
+          id: paper.id,
+          source: paper.source,
+          title: paper.title,
+          sourceUrl: paper.sourceUrl,
+          html: paper.html,
+        }
         // s-maxage lets Vercel's CDN, which proxies /api/*, cache papers for a day.
         return Response.json(body, { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } })
       }
 
       if (request.method === 'GET' && url.pathname.startsWith('/api/meta/')) {
         const id = decodeURIComponent(url.pathname.slice('/api/meta/'.length))
-        if (!isArxivId(id)) throw new PaperError(`"${id}" is not a valid arXiv ID.`, 400)
+        if (!isPaperId(id)) throw new PaperError(`"${id}" is not an arXiv ID or bioRxiv DOI.`, 400)
         const meta = await getPaperMeta(id, ctx)
         return Response.json(meta, { headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=604800' } })
       }
@@ -66,7 +73,7 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext) {
 }
 
 function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper> {
-  if (!isArxivId(id)) throw new PaperError(`"${id}" is not a valid arXiv ID.`, 400)
+  if (!isPaperId(id)) throw new PaperError(`"${id}" is not an arXiv ID or bioRxiv DOI.`, 400)
   return getPaper(id, ctx)
 }
 

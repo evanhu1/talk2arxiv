@@ -8,3 +8,5 @@ dist/
 
 # claude code local settings
 .claude/settings.local.json
+.vercel
+.vercel/

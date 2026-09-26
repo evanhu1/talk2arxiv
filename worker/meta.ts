@@ -1,11 +1,14 @@
+import { sourceOf } from '../shared/papers'
 import type { PaperMeta } from '../shared/types'
+import { USER_AGENT } from './arxiv'
+import { fetchBiorxivPage, readMeta } from './biorxiv'
 import { PaperError } from './paper'
 
-// Title and abstract for link previews. arXiv's metadata API covers every
-// paper, including ones with no HTML version, and it is much smaller than the
-// full paper page.
+// Title and abstract for link previews. For arXiv, the metadata API covers
+// every paper, including ones with no HTML version, and it is much smaller
+// than the full paper page. For bioRxiv, the abstract page has both in its
+// <meta> tags.
 const ARXIV_API = 'https://export.arxiv.org/api/query?id_list='
-const USER_AGENT = 'Talk2Arxiv/2.0 (+https://talk2arxiv.org)'
 const CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
 
 const memory = new Map<string, PaperMeta>()
@@ -15,9 +18,13 @@ export async function getPaperMeta(id: string, ctx: ExecutionContext): Promise<P
   const hit = memory.get(id)
   if (hit) return hit
 
-  const cacheKey = new Request(`https://cache.talk2arxiv.internal/meta/v1/${id}`)
+  const cacheKey = new Request(`https://cache.talk2arxiv.internal/meta/v3/${id}`)
   const cached = await caches.default.match(cacheKey)
-  const meta: PaperMeta = cached ? await cached.json() : await fetchMeta(id)
+  const meta: PaperMeta = cached
+    ? await cached.json()
+    : sourceOf(id) === 'biorxiv'
+      ? await fetchBiorxivMeta(id)
+      : await fetchArxivMeta(id)
   if (!cached) {
     const response = Response.json(meta, {
       headers: { 'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}` },
@@ -30,7 +37,15 @@ export async function getPaperMeta(id: string, ctx: ExecutionContext): Promise<P
   return meta
 }
 
-async function fetchMeta(id: string): Promise<PaperMeta> {
+async function fetchBiorxivMeta(id: string): Promise<PaperMeta> {
+  const { page } = await fetchBiorxivPage(id)
+  const title = readMeta(page, 'citation_title')[0]
+  if (!title) throw new PaperError('bioRxiv has no paper with this DOI.', 404)
+  // The plain "description" tag is bioRxiv's site blurb. DC.Description is the abstract.
+  return { id, title, abstract: readMeta(page, 'DC.Description')[0] ?? '' }
+}
+
+async function fetchArxivMeta(id: string): Promise<PaperMeta> {
   const response = await fetch(ARXIV_API + encodeURIComponent(id), {
     headers: { 'User-Agent': USER_AGENT },
   })

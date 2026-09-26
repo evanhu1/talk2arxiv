@@ -1,5 +1,5 @@
 import { ExternalLink, FileText, MessageSquareText } from 'lucide-react'
-import { absUrl, pdfUrl } from '../lib/arxiv'
+import { displayId, SOURCE_NAMES, sourceOf, sourcePageUrl, sourcePdfUrl } from '../../shared/papers'
 import { useThemeColor } from '../lib/useThemeColor'
 import GithubIcon from './GithubIcon'
 import { GooeyNav } from './ui/gooey-nav'
@@ -22,7 +22,7 @@ export default function TopBar({ paperId, title, chatOpen, onChatOpenChange, com
         <p className="truncate font-serif text-[15px] font-semibold" title={title ?? undefined}>
           {title ?? 'Loading…'}
         </p>
-        <p className="truncate text-[11px] leading-tight text-faint">arXiv:{paperId}</p>
+        <p className="truncate text-[11px] leading-tight text-faint">{displayId(paperId)}</p>
       </div>
 
       {compact ? (
@@ -40,15 +40,15 @@ export default function TopBar({ paperId, title, chatOpen, onChatOpenChange, com
       ) : (
         <nav className="flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-muted">
           <a
-            href={absUrl(paperId)}
+            href={sourcePageUrl(paperId)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 hover:bg-subtle hover:text-ink"
           >
-            arXiv <ExternalLink className="size-3" />
+            {SOURCE_NAMES[sourceOf(paperId) ?? 'arxiv']} <ExternalLink className="size-3" />
           </a>
           <a
-            href={pdfUrl(paperId)}
+            href={sourcePdfUrl(paperId)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 hover:bg-subtle hover:text-ink"

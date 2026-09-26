@@ -1,3 +1,4 @@
+import { SOURCE_NAMES } from '../shared/papers'
 import { STREAM_ERROR_MARKER, type ChatMessage, type ChatRequest } from '../shared/types'
 import type { LoadedPaper } from './paper'
 
@@ -84,7 +85,7 @@ export async function streamAnswer(
 }
 
 function systemPrompt(paper: LoadedPaper) {
-  return `You are Talk2Arxiv, an expert research assistant. A reader is studying the arXiv paper below and asks you about it.
+  return `You are Talk2Arxiv, an expert research assistant. A reader is studying the ${SOURCE_NAMES[paper.source]} paper below and asks you about it.
 
 - Base your answers on the paper. When you add background knowledge that is not in the paper, say so.
 - Refer to sections, figures, tables, and equations by their numbers, so the reader can find them.

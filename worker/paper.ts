@@ -1,23 +1,9 @@
+import { sourceOf } from '../shared/papers'
 import type { Paper } from '../shared/types'
+import { fetchArxivPaper } from './arxiv'
+import { fetchBiorxivPaper } from './biorxiv'
 
-// New-style (2401.12345v2) and old-style (hep-th/9711200) arXiv identifiers.
-const ARXIV_ID = /^(\d{4}\.\d{4,5}|[a-z-]+(\.[A-Z]{2})?\/\d{7})(v\d+)?$/
-
-export const isArxivId = (id: string) => ARXIV_ID.test(id)
-
-// arXiv renders most papers since 2023 (and many older ones) as HTML5.
-// ar5iv covers older papers that arXiv has not rendered.
-const SOURCES = [
-  (id: string) => `https://arxiv.org/html/${id}`,
-  (id: string) => `https://ar5iv.labs.arxiv.org/html/${id}`,
-]
-
-const USER_AGENT = 'Talk2Arxiv/2.0 (+https://talk2arxiv.org)'
-
-// Pages shorter than this are error or placeholder pages, not papers.
-const MIN_TEXT_LENGTH = 1500
-
-const CACHE_VERSION = 'v1'
+const CACHE_VERSION = 'v2'
 const CACHE_TTL_SECONDS = 60 * 60 * 24
 
 export interface LoadedPaper extends Paper {
@@ -53,50 +39,31 @@ async function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper
   const cached = await cache.match(cacheKey)
   if (cached) return cached.json()
 
-  for (const source of SOURCES) {
-    const paper = await fetchPaper(id, source(id))
-    if (!paper) continue
-    const response = new Response(JSON.stringify(paper), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
-      },
-    })
-    ctx.waitUntil(cache.put(cacheKey, response))
-    return paper
-  }
-
-  throw new PaperError(
-    'arXiv has no HTML version of this paper. It may only be available as a PDF.',
-    404,
-  )
+  const paper = sourceOf(id) === 'biorxiv' ? await fetchBiorxivPaper(id) : await fetchArxivPaper(id)
+  const response = new Response(JSON.stringify(paper), {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
+    },
+  })
+  ctx.waitUntil(cache.put(cacheKey, response))
+  return paper
 }
 
-async function fetchPaper(id: string, url: string): Promise<LoadedPaper | null> {
-  let response: Response
-  try {
-    response = await fetch(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'text/html' } })
-  } catch {
-    return null
-  }
-  if (!response.ok) return null
-
-  const page = await response.text()
-  const start = page.indexOf('<article')
-  const end = page.lastIndexOf('</article>')
-  if (start < 0 || end < start) return null
-
-  const article = page.slice(start, end + '</article>'.length)
-  const { html, text } = await processArticle(article, response.url || url)
-  if (text.length < MIN_TEXT_LENGTH) return null
-
-  return { id, title: extractTitle(page, text), sourceUrl: response.url || url, html, text }
+export interface ArticleTools {
+  // Removes an element, such as a source site's buttons, from the output.
+  drop: (el: Element) => void
 }
 
 // One streaming pass over the article that:
 // - makes image and link URLs absolute, so the browser can load them, and
 // - collects plain text, with each <math> replaced by its LaTeX source.
-async function processArticle(article: string, baseUrl: string) {
+// `extend` adds source-specific handlers, which run before the shared ones.
+export async function processArticle(
+  article: string,
+  baseUrl: string,
+  extend: (rewriter: HTMLRewriter, tools: ArticleTools) => HTMLRewriter = (rewriter) => rewriter,
+) {
   const parts: string[] = []
   let skip = 0
   const push = (value: string) => {
@@ -120,7 +87,7 @@ async function processArticle(article: string, baseUrl: string) {
     }
   }
 
-  const rewriter = new HTMLRewriter()
+  const rewriter = extend(new HTMLRewriter(), { drop: (el) => el.remove() })
     .on('script, style, button, svg, annotation, annotation-xml', { element: skipContents })
     .on('math', {
       element(el) {
@@ -166,7 +133,7 @@ async function processArticle(article: string, baseUrl: string) {
   return { html, text }
 }
 
-function extractTitle(page: string, text: string) {
+export function extractTitle(page: string, text: string) {
   const match = page.match(/<title>([\s\S]*?)<\/title>/i)
   const title = decodeEntities(match?.[1] ?? '')
     .replace(/^\s*\[[^\]]+\]\s*/, '') // ar5iv prefixes "[id] "
@@ -192,7 +159,7 @@ const NAMED_ENTITIES: Record<string, string> = {
 }
 
 // HTMLRewriter hands over raw source text, so entities are still encoded.
-function decodeEntities(value: string) {
+export function decodeEntities(value: string) {
   return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, body: string) => {
     if (body[0] !== '#') return NAMED_ENTITIES[body] ?? entity
     const hex = body[1] === 'x' || body[1] === 'X'

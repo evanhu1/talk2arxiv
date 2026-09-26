@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import Home from './pages/Home'
-import { paperIdFromPath } from './lib/arxiv'
+import { paperIdFromPath } from '../shared/papers'
 
 // The reader pulls in Markdown, KaTeX, and DOMPurify. The home page needs none of them.
 const PaperPage = lazy(() => import('./pages/PaperPage'))

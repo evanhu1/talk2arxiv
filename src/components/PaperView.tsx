@@ -3,7 +3,7 @@ import DOMPurify from 'dompurify'
 import { FileWarning } from 'lucide-react'
 import type { Paper } from '../../shared/types'
 import { fetchPaper } from '../lib/api'
-import { absUrl, pdfUrl } from '../lib/arxiv'
+import { SOURCE_NAMES, sourceOf, sourcePageUrl, sourcePdfUrl } from '../../shared/papers'
 
 export interface OutlineItem {
   id: string
@@ -41,7 +41,7 @@ export default function PaperView({ paperId, articleRef, onLoaded }: Props) {
     // onLoaded is a fresh function each render. Run once per loaded paper.
   }, [state, articleRef])
 
-  if (state.status === 'loading') return <Skeleton />
+  if (state.status === 'loading') return <Skeleton paperId={paperId} />
   if (state.status === 'error') return <LoadError paperId={paperId} message={state.message} />
 
   return (
@@ -50,8 +50,8 @@ export default function PaperView({ paperId, articleRef, onLoaded }: Props) {
         <div ref={articleRef} className="paper" dangerouslySetInnerHTML={{ __html: html }} />
       </div>
       <p className="mt-4 text-center text-[12px] text-faint">
-        HTML rendering from arXiv.{' '}
-        <a href={pdfUrl(paperId)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-muted">
+        HTML rendering from {sourceName(paperId)}.{' '}
+        <a href={sourcePdfUrl(paperId)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-muted">
           View the PDF
         </a>{' '}
         if anything looks wrong.
@@ -60,7 +60,7 @@ export default function PaperView({ paperId, articleRef, onLoaded }: Props) {
   )
 }
 
-// The HTML comes from arXiv, but authors control its contents. Strip scripts,
+// The HTML comes from arXiv or bioRxiv, but authors control its contents. Strip scripts,
 // event handlers, and forms, and keep MathML and SVG for equations and figures.
 // `alttext` and <annotation> hold each equation's LaTeX source, which quotes
 // sent to the model use. <annotation-xml> stays out: it can carry HTML.
@@ -80,7 +80,9 @@ function buildOutline(root: HTMLElement): OutlineItem[] {
     abstract.id ||= 'abstract'
     items.push({ id: abstract.id, label: 'Abstract', level: 1 })
   }
-  for (const heading of root.querySelectorAll<HTMLElement>('section > h2.ltx_title, section > h3.ltx_title')) {
+  // arXiv (LaTeXML): <section><h2 class="ltx_title">. bioRxiv: <div class="section"><h2>.
+  const headings = 'section > h2.ltx_title, section > h3.ltx_title, div.section > h2, div.subsection > h3'
+  for (const heading of root.querySelectorAll<HTMLElement>(headings)) {
     const section = heading.parentElement!
     section.id ||= `section-${items.length}`
     const label = headingText(heading)
@@ -95,7 +97,7 @@ function headingText(heading: HTMLElement) {
   return (copy.textContent ?? '').replace(/\s+/g, ' ').trim()
 }
 
-function Skeleton() {
+function Skeleton({ paperId }: { paperId: string }) {
   return (
     <div className="mx-auto w-full max-w-[860px] px-3 py-4 md:px-8 md:py-8" aria-busy="true">
       <div className="rounded-2xl border border-line bg-surface px-5 py-8 md:px-14 md:py-14">
@@ -108,7 +110,7 @@ function Skeleton() {
             <div key={i} className="h-4 rounded bg-subtle" style={{ width: `${92 - ((i * 17) % 30)}%` }} />
           ))}
         </div>
-        <p className="mt-8 text-center text-[13px] text-muted">Fetching the paper from arXiv…</p>
+        <p className="mt-8 text-center text-[13px] text-muted">Fetching the paper from {sourceName(paperId)}…</p>
       </div>
     </div>
   )
@@ -124,15 +126,15 @@ function LoadError({ paperId, message }: { paperId: string; message: string }) {
       <p className="mt-2 text-[14px] leading-relaxed text-muted">{message}</p>
       <div className="mt-6 flex flex-wrap justify-center gap-2 text-[13px] font-medium">
         <a
-          href={absUrl(paperId)}
+          href={sourcePageUrl(paperId)}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-lg border border-line bg-surface px-3.5 py-2 hover:bg-subtle"
         >
-          Open on arXiv
+          Open on {sourceName(paperId)}
         </a>
         <a
-          href={pdfUrl(paperId)}
+          href={sourcePdfUrl(paperId)}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-lg border border-line bg-surface px-3.5 py-2 hover:bg-subtle"
@@ -146,3 +148,5 @@ function LoadError({ paperId, message }: { paperId: string; message: string }) {
     </div>
   )
 }
+
+const sourceName = (paperId: string) => SOURCE_NAMES[sourceOf(paperId) ?? 'arxiv']

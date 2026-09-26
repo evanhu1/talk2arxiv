@@ -1,19 +1,38 @@
 import { next } from '@vercel/functions'
+import { paperIdFromPath, readerPath, SOURCE_NAMES, sourceOf, type Source } from './shared/papers'
 import type { PaperMeta } from './shared/types'
 
 // Vercel Routing Middleware. Link-preview bots (Slack, iMessage, X, Discord…)
 // do not run JavaScript, so they would only see the app's generic tags. For
-// those bots, paper URLs get a small page whose tags name the paper. Everyone
-// else, search engines included, gets the normal app.
+// those bots, paper URLs (and the talk2biorxiv.org home page) get a small page
+// whose tags name the paper or site. Everyone else, search engines included,
+// gets the normal app.
 export const config = {
   runtime: 'nodejs',
-  matcher: ['/abs/:path*', '/pdf/:path*', '/html/:path*'],
+  matcher: ['/', '/abs/:path*', '/pdf/:path*', '/html/:path*', '/content/:path*'],
 }
 
 // The same Worker that vercel.json rewrites /api/* to.
 const API = 'https://talk2arxiv.hu-evan123.workers.dev/api/meta/'
-const SITE = 'https://www.talk2arxiv.org'
-const IMAGE = `${SITE}/og.png`
+
+const SITES: Record<Source, { origin: string; name: string; image: string; tagline: string; description: string }> = {
+  arxiv: {
+    origin: 'https://www.talk2arxiv.org',
+    name: 'Talk2Arxiv',
+    image: 'https://www.talk2arxiv.org/og.png',
+    tagline: 'Talk to any arXiv paper',
+    description:
+      'Change arxiv.org to talk2arxiv.org in any paper link to read the paper and ask an AI that has read all of it.',
+  },
+  biorxiv: {
+    origin: 'https://www.talk2biorxiv.org',
+    name: 'Talk2bioRxiv',
+    image: 'https://www.talk2biorxiv.org/og-biorxiv.png',
+    tagline: 'Talk to any bioRxiv paper',
+    description:
+      'Change biorxiv.org to talk2biorxiv.org in any paper link to read the paper and ask an AI that has read all of it.',
+  },
+}
 
 const PREVIEW_BOTS =
   /facebookexternalhit|facebot|twitterbot|slackbot|slack-imgproxy|discordbot|telegrambot|whatsapp|linkedinbot|skypeuripreview|pinterest|redditbot|embedly|iframely|vkshare|mastodon|bluesky|cardyb|snapchat|microsoftpreview/i
@@ -22,17 +41,28 @@ export default async function middleware(request: Request) {
   if (!PREVIEW_BOTS.test(request.headers.get('user-agent') ?? '')) return next()
 
   const url = new URL(request.url)
-  const id = url.pathname.replace(/^\/(abs|pdf|html)\//, '').replace(/(\.pdf)?\/?$/, '')
-  const meta = await fetchMeta(id)
-  const pageUrl = `${SITE}/abs/${id}`
-  const title = meta ? `Talk to ${meta.title}` : `Talk to arXiv:${id}`
-  const description = meta?.abstract ? truncate(meta.abstract, 200) : 'Read this arXiv paper and ask an AI about it.'
+  // "bio" also matches the misspelled talk2bioarxiv.org, which redirects here.
+  const hostSite: Source = url.hostname.includes('bio') ? 'biorxiv' : 'arxiv'
 
-  return new Response(previewPage({ title, description, pageUrl }), {
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=86400',
-    },
+  if (url.pathname === '/') {
+    // The generic tags in index.html already describe talk2arxiv.org.
+    if (hostSite === 'arxiv') return next()
+    const site = SITES.biorxiv
+    return preview({ title: site.tagline, description: site.description, pageUrl: `${site.origin}/`, site, type: 'website' })
+  }
+
+  const id = paperIdFromPath(url.pathname)
+  const source = id ? sourceOf(id) : null
+  if (!id || !source) return next()
+
+  const site = SITES[source]
+  const meta = await fetchMeta(id)
+  return preview({
+    title: meta ? `Talk to ${meta.title}` : `Talk to this ${SOURCE_NAMES[source]} paper`,
+    description: meta?.abstract ? truncate(meta.abstract, 200) : site.description,
+    pageUrl: site.origin + readerPath(id),
+    site,
+    type: 'article',
   })
 }
 
@@ -45,7 +75,26 @@ async function fetchMeta(id: string): Promise<PaperMeta | null> {
   }
 }
 
-function previewPage({ title, description, pageUrl }: { title: string; description: string; pageUrl: string }) {
+interface Preview {
+  title: string
+  description: string
+  pageUrl: string
+  site: (typeof SITES)[Source]
+  type: 'website' | 'article'
+}
+
+function preview(page: Preview) {
+  return new Response(previewPage(page), {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      // Private: the CDN must never serve this bot page to a person.
+      'Cache-Control': 'private, max-age=3600',
+      Vary: 'User-Agent',
+    },
+  })
+}
+
+function previewPage({ title, description, pageUrl, site, type }: Preview) {
   const t = escapeHtml(title)
   const d = escapeHtml(description)
   const u = escapeHtml(pageUrl)
@@ -56,24 +105,24 @@ function previewPage({ title, description, pageUrl }: { title: string; descripti
 <title>${t}</title>
 <meta name="description" content="${d}">
 <link rel="canonical" href="${u}">
-<meta property="og:type" content="article">
-<meta property="og:site_name" content="Talk2Arxiv">
+<meta property="og:type" content="${type}">
+<meta property="og:site_name" content="${site.name}">
 <meta property="og:title" content="${t}">
 <meta property="og:description" content="${d}">
 <meta property="og:url" content="${u}">
-<meta property="og:image" content="${IMAGE}">
+<meta property="og:image" content="${site.image}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Talk2Arxiv: talk to any arXiv paper">
+<meta property="og:image:alt" content="${site.name}: ${escapeHtml(site.tagline.toLowerCase())}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${t}">
 <meta name="twitter:description" content="${d}">
-<meta name="twitter:image" content="${IMAGE}">
+<meta name="twitter:image" content="${site.image}">
 </head>
 <body>
 <h1>${t}</h1>
 <p>${d}</p>
-<p><a href="${u}">Open on Talk2Arxiv</a></p>
+<p><a href="${u}">Open on ${site.name}</a></p>
 </body>
 </html>
 `
@@ -85,9 +134,5 @@ function truncate(text: string, max: number) {
 }
 
 function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

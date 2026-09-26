@@ -4,11 +4,12 @@
 Vercel hosts the React single-page app and the domain. A Cloudflare Worker runs the API, and `vercel.json` rewrites `/api/*` to it. In local dev, Vite serves both.
 
 - `src/`: the browser app (Vite, React, Tailwind CSS v4). `src/pages/` holds the two screens (`Home`, `PaperPage`). Reusable UI lives in `src/components/` (`ChatPanel`, `PaperView`, `SelectionPopover`). `src/components/ui/` holds Rare UI components installed with the shadcn CLI. Keep their license header, and keep the rareui.com credit in the home page footer and the README. Hooks and client helpers live in `src/lib/`.
-- `worker/`: the Worker. `paper.ts` fetches and processes arXiv HTML, `chat.ts` builds the prompt and streams from OpenRouter, and `index.ts` routes `/api/*`.
-- `shared/`: types used by both sides.
+- `worker/`: the Worker. `paper.ts` caches papers and extracts their text; `arxiv.ts` and `biorxiv.ts` fetch each source; `meta.ts` serves titles and abstracts for link previews; `chat.ts` builds the prompt and streams from OpenRouter; `index.ts` routes `/api/*`.
+- `shared/`: code used by the Worker, the app, and the middleware. `papers.ts` parses arXiv IDs, bioRxiv DOIs, and every URL shape.
+- `middleware.ts`: Vercel Routing Middleware that serves paper-specific link-preview tags to preview bots.
 - `public/`: static assets. `images/`: images for the README.
 
-Routes mirror arxiv.org (`/abs/<id>`, `/pdf/<id>.pdf`, `/html/<id>`), so swapping the domain in a paper link works.
+Routes mirror arxiv.org (`/abs/<id>`, `/pdf/<id>.pdf`, `/html/<id>`) and biorxiv.org (`/content/10.1101/<id>`), so swapping the domain in a paper link works. talk2arxiv.org and talk2biorxiv.org serve the same app; `src/lib/site.ts` picks the home page branding by domain (`?site=biorxiv` previews it locally).
 
 ## Build, Test, and Development Commands
 Use Yarn, since `yarn.lock` is checked in.

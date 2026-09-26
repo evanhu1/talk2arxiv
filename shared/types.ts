@@ -1,7 +1,9 @@
 // Types shared by the Worker (worker/) and the browser app (src/).
+import type { Source } from './papers'
 
 export interface Paper {
   id: string
+  source: Source
   title: string
   // The URL the HTML came from. Relative links in `html` are already absolute.
   sourceUrl: string

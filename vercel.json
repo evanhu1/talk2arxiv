@@ -5,7 +5,48 @@
   "buildCommand": "yarn build",
   "outputDirectory": "dist/client",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://talk2arxiv.hu-evan123.workers.dev/api/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://talk2arxiv.hu-evan123.workers.dev/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "talk2biorxiv.org"
+        }
+      ],
+      "destination": "https://www.talk2biorxiv.org/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "talk2bioarxiv.org"
+        }
+      ],
+      "destination": "https://www.talk2biorxiv.org/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.talk2bioarxiv.org"
+        }
+      ],
+      "destination": "https://www.talk2biorxiv.org/:path*",
+      "permanent": true
+    }
   ]
 }
