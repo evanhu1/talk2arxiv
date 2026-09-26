@@ -1,21 +1,24 @@
 import { useState } from 'react'
-import { ArrowRight, Clock } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import GithubIcon from '../components/GithubIcon'
-import Logo from '../components/Logo'
 import { parseArxivInput } from '../lib/arxiv'
-import { loadRecentPapers } from '../lib/storage'
 
-const EXAMPLES = [
-  { id: '1706.03762', title: 'Attention Is All You Need', topic: 'Transformers' },
-  { id: '2106.09685', title: 'LoRA: Low-Rank Adaptation of Large Language Models', topic: 'Fine-tuning' },
-  { id: '2201.11903', title: 'Chain-of-Thought Prompting Elicits Reasoning in Large Language Models', topic: 'Reasoning' },
-  { id: '2005.14165', title: 'Language Models are Few-Shot Learners', topic: 'GPT-3' },
+// The most-opened papers on talk2arxiv.org (Vercel request counts, Sep 2026).
+const MOST_POPULAR = [
+  { id: '1706.03762', title: 'Attention Is All You Need' },
+  { id: '2401.02412', title: 'LLM Augmented LLMs: Expanding Capabilities through Composition' },
+  { id: '2211.04325', title: 'Will we run out of data? Limits of LLM scaling based on human-generated data' },
+  { id: '2312.11514', title: 'LLM in a flash: Efficient Large Language Model Inference with Limited Memory' },
+  { id: '2110.11008', title: 'Optimal trading: a model predictive control approach' },
+  {
+    id: '2410.01727',
+    title: 'Automated Knowledge Concept Annotation and Question Representation Learning for Knowledge Tracing',
+  },
 ]
 
 export default function Home() {
   const [input, setInput] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [recent] = useState(loadRecentPapers)
 
   const open = (event: React.FormEvent) => {
     event.preventDefault()
@@ -29,8 +32,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex h-14 items-center justify-between px-5">
-        <Logo />
+      <header className="flex h-14 items-center justify-end px-5">
         <a
           href="https://github.com/evanhu1/talk2arxiv"
           target="_blank"
@@ -44,13 +46,26 @@ export default function Home() {
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-[12vh] pb-16">
         <h1 className="font-serif text-[40px] leading-[1.1] font-semibold tracking-tight md:text-[52px]">
-          Talk to any <span className="text-accent">arXiv</span> paper.
+          Talk to any <span className="text-accent">arXiv</span> paper
         </h1>
-        <p className="mt-4 max-w-lg text-[16px] leading-relaxed text-muted">
-          Read the paper as clean HTML. Highlight any passage and ask about it. The assistant has read the whole paper.
-        </p>
 
-        <form onSubmit={open} className="mt-8">
+        <div className="mt-8 rounded-2xl border border-line bg-surface px-5 py-4">
+          <p className="text-[15px] leading-relaxed">
+            Change <code className="rounded bg-subtle px-1.5 py-0.5 text-[13.5px]">arxiv.org</code> to{' '}
+            <code className="rounded bg-subtle px-1.5 py-0.5 text-[13.5px]">talk2arxiv.org</code> in any paper link.
+          </p>
+          <p className="mt-2 truncate font-mono text-[13px] text-muted">
+            https://<span className="font-semibold text-accent">talk2</span>arxiv.org/abs/1706.03762
+          </p>
+        </div>
+
+        <div className="my-5 flex items-center gap-3 text-[11px] font-semibold tracking-wider text-faint uppercase">
+          <span className="h-px flex-1 bg-line" />
+          or
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
+        <form onSubmit={open}>
           <div className="flex items-center gap-2 rounded-2xl border border-line bg-surface p-2 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-colors focus-within:border-faint">
             <input
               value={input}
@@ -72,19 +87,8 @@ export default function Home() {
           </div>
           {error && <p className="mt-2 px-1 text-[13px] text-accent">{error}</p>}
         </form>
-        <p className="mt-3 px-1 text-[13px] text-muted">
-          Or change <code className="rounded bg-subtle px-1.5 py-0.5 text-[12px]">arxiv.org</code> to{' '}
-          <code className="rounded bg-subtle px-1.5 py-0.5 text-[12px]">talk2arxiv.org</code> in any paper link.
-        </p>
 
-        {recent.length > 0 && (
-          <PaperList
-            heading="Recent"
-            papers={recent.map((p) => ({ ...p, topic: null }))}
-            icon={<Clock className="size-3.5" />}
-          />
-        )}
-        <PaperList heading="Try a classic" papers={EXAMPLES} />
+        <PaperList heading="Most popular" papers={MOST_POPULAR} />
       </main>
 
       <footer className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-5 py-6 text-[12px] text-faint">
@@ -92,12 +96,7 @@ export default function Home() {
         <a href="https://github.com/evanhu1/talk2arxiv" target="_blank" rel="noopener noreferrer" className="hover:text-muted">
           Open source
         </a>
-        <a
-          href="https://rareui.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[10px] opacity-40 transition-opacity hover:opacity-100"
-        >
+        <a href="https://rareui.com" target="_blank" rel="noopener noreferrer" className="hover:text-muted">
           Components by Rare UI
         </a>
       </footer>
@@ -108,16 +107,13 @@ export default function Home() {
 function PaperList({
   heading,
   papers,
-  icon,
 }: {
   heading: string
-  papers: { id: string; title: string; topic: string | null }[]
-  icon?: React.ReactNode
+  papers: { id: string; title: string }[]
 }) {
   return (
     <section className="mt-12">
       <h2 className="mb-2 flex items-center gap-1.5 px-1 text-[12px] font-semibold tracking-wider text-faint uppercase">
-        {icon}
         {heading}
       </h2>
       <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
@@ -126,10 +122,7 @@ function PaperList({
             <a href={`/abs/${paper.id}`} className="group flex items-center gap-4 px-4 py-3 hover:bg-subtle">
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-serif text-[15.5px] font-semibold">{paper.title}</span>
-                <span className="text-[12px] text-faint">
-                  arXiv:{paper.id}
-                  {paper.topic && ` · ${paper.topic}`}
-                </span>
+                <span className="text-[12px] text-faint">arXiv:{paper.id}</span>
               </span>
               <ArrowRight className="size-4 shrink-0 text-faint transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
             </a>

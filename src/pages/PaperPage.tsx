@@ -8,7 +8,7 @@ import TopBar from '../components/TopBar'
 import ProximitySidebar, { type ProximitySection } from '../components/ui/proximity-sidebar'
 import ScrollProgress from '../components/ui/scroll-progress'
 import { clearQuoteHighlight, showQuoteHighlight } from '../lib/selection'
-import { loadNumber, rememberPaper, saveNumber } from '../lib/storage'
+import { loadNumber, saveNumber } from '../lib/storage'
 import { useChat } from '../lib/useChat'
 import { useMediaQuery } from '../lib/useMediaQuery'
 
@@ -44,8 +44,7 @@ export default function PaperPage({ paperId }: { paperId: string }) {
   useEffect(() => {
     if (!paper) return
     document.title = `${paper.title} · Talk2Arxiv`
-    rememberPaper({ id: paperId, title: paper.title })
-  }, [paper, paperId])
+  }, [paper])
 
   const onLoaded = useCallback((loaded: Paper, items: OutlineItem[]) => {
     setPaper(loaded)

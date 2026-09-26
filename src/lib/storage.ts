@@ -34,23 +34,6 @@ export function saveChat(paperId: string, messages: StoredMessage[]) {
   write(chatKey(paperId), messages.length ? messages : null)
 }
 
-export interface RecentPaper {
-  id: string
-  title: string
-}
-
-const RECENT_KEY = 'talk2arxiv:recent'
-
-export function loadRecentPapers(): RecentPaper[] {
-  const papers = read<unknown>(RECENT_KEY, [])
-  return Array.isArray(papers) ? (papers as RecentPaper[]) : []
-}
-
-export function rememberPaper(paper: RecentPaper) {
-  const others = loadRecentPapers().filter((p) => p.id !== paper.id)
-  write(RECENT_KEY, [paper, ...others].slice(0, 8))
-}
-
 export function loadNumber(key: string, fallback: number) {
   const value = read<unknown>(key, fallback)
   return typeof value === 'number' ? value : fallback
