@@ -1,8 +1,9 @@
-.vscode/
-next-env.d.ts
 node_modules/
-.next/
-chroma
+dist/
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+.env*
 .DS_Store
 
 # claude code local settings

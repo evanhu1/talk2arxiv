@@ -1,28 +1,59 @@
-# Prepend any arxiv.org link with 'talk2' to load the paper into a responsive RAG chat application (e.g. www.arxiv.org/pdf/1706.03762.pdf -> www.talk2arxiv.org/pdf/1706.03762.pdf).
-Talk2Arxiv is an open-source RAG (Retrieval-Augmented Generation) system specially built for academic paper PDFs. Powered by [talk2arxiv-server](https://github.com/evanhu1/talk2arxiv-server)
+# Talk2Arxiv
+
+Change `arxiv.org` to `talk2arxiv.org` in any paper link to read the paper and chat with an AI that has read all of it. For example, `arxiv.org/abs/1706.03762` becomes `talk2arxiv.org/abs/1706.03762`.
 
 ![Screenshot](/images/screenshot.png?raw=true "Screenshot")
 
-## Installation
-Just run `yarn` and then `yarn run dev`.
-
 ## Features
-- PDF Parsing: Utilizes GROBID for efficient text extraction from PDFs.
-- Chunking Algorithm: Custom-built algorithm for optimal text chunking. Chunks by logical section (intro, abstract, authors, etc.) and also utilizes recursive subdivision chunking (chunk at 512 characters, then 256, then 128...)
-- Text Embedding: Uses Cohere's EmbedV3 model for accurate text embeddings.
-- Vector Database Integration: Uses Qdrant for storing and querying embeddings. This also functions to cache research papers so a paper only ever needs to be embedded once.
-- Contextual Relevance: Employs a reranking process to select the most relevant content based on user input.
 
-## Technologies Used
-Frontend: Developed using Typescript, ReactJS, TailwindCSS, and NextJS.
-Backend: Powered by [talk2arxiv-server](https://github.com/evanhu1/talk2arxiv-server), which uses Flask, Gunicorn, and Nginx.
+- **Clean HTML reader.** Papers load from arXiv's HTML5 version (with [ar5iv](https://ar5iv.labs.arxiv.org) as a fallback), with native MathML equations, a table of contents, and a reading-progress bar.
+- **Highlight and ask.** Select any passage and click **Ask AI** or **Explain**. The passage goes to the chat with its equations as LaTeX.
+- **Whole-paper context.** No chunking, embeddings, or vector database. The full paper text goes into the model's context, and OpenAI's prompt cache reuses it for each question.
+- **Local history.** Each paper's chat stays in your browser's `localStorage`.
 
-## Roadmap
-- Improved chunking strategy
-- Switch to extracting source LaTeX code to increase retrieval effectiveness for symbolic math formulas and non standard text elements
-- Use visual understanding LLM models as well
-- Account based personalization
+Papers that are too long for the context window (about 800K tokens) get a clear error message. So do papers that arXiv has not rendered as HTML.
 
-## Known Issues
-- The backend is not built to handle any level of scale, with lots of concurrent requests it will stall as it single threadedly handles them
-  
+## How it works
+
+- **Vercel** hosts the React app (Vite, Tailwind CSS, Rare UI components) and the domain. It rewrites `/api/*` to the Worker, so the browser sees one origin, and its CDN caches papers.
+- **A Cloudflare Worker** runs the API:
+  - `GET /api/paper/:id` fetches the arXiv HTML, makes image and link URLs absolute, and extracts plain text with LaTeX math.
+  - `POST /api/chat` puts the paper text and the conversation into one prompt. It sends the prompt to GPT-6 Luna (`openai/gpt-6-luna`) through OpenRouter, on the OpenAI provider, and streams the answer back.
+
+## Development
+
+1. Install dependencies:
+
+   ```sh
+   yarn
+   ```
+
+2. Put your OpenRouter key in `.dev.vars`:
+
+   ```sh
+   cp .dev.vars.example .dev.vars
+   ```
+
+3. Start the dev server. It runs the Worker in the real Workers runtime:
+
+   ```sh
+   yarn dev
+   ```
+
+## Deployment
+
+1. Deploy the Worker, and set its OpenRouter key:
+
+   ```sh
+   yarn deploy:worker
+   npx wrangler secret put OPENROUTER_API_KEY
+   ```
+
+2. If the Worker's URL changes, update the `/api` rewrite in `vercel.json`.
+3. Push to `main`. Vercel builds and deploys the site.
+
+## Credits
+
+Papers come from [arXiv](https://arxiv.org). Thank you to arXiv for use of its open access interoperability.
+
+Animated components (`src/components/ui/`) come from [Rare UI](https://rareui.com), under its MIT + Commons Clause + Attribution license.

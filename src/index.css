@@ -1,0 +1,589 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-quote: var(--quote);
+  /* shadcn token names, used by the Rare UI components in components/ui */
+  --color-background: var(--surface);
+  --color-foreground: var(--ink);
+  --color-muted-foreground: var(--muted);
+  --color-border: var(--line);
+  --color-ring: var(--faint);
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+}
+
+:root {
+  --canvas: #f5f5f3;
+  --surface: #ffffff;
+  --subtle: #f1f0ee;
+  --line: #e5e3df;
+  --ink: #1b1a18;
+  --muted: #6b6862;
+  --faint: #a19d96;
+  --accent: #b31b1b;
+  --accent-strong: #951515;
+  --accent-soft: rgb(179 27 27 / 0.08);
+  --quote: rgb(250 204 21 / 0.38);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #0e0e0d;
+    --surface: #171716;
+    --subtle: #1f1f1d;
+    --line: #2c2b28;
+    --ink: #e9e7e3;
+    --muted: #a09c95;
+    --faint: #6d6a64;
+    --accent: #f06a6a;
+    --accent-strong: #ff8a8a;
+    --accent-soft: rgb(240 106 106 / 0.12);
+    --quote: rgb(250 204 21 / 0.28);
+  }
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgb(179 27 27 / 0.18);
+}
+
+/* The passage the reader is asking about stays marked while they type. */
+::highlight(talk2arxiv-quote) {
+  background-color: var(--quote);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.14s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* arXiv HTML papers (LaTeXML output)                                  */
+/* ------------------------------------------------------------------ */
+
+.paper {
+  font-family: var(--font-serif);
+  font-size: 1.075rem;
+  line-height: 1.7;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.paper .ltx_title_document {
+  font-size: 2rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 1.25rem;
+}
+
+.paper .ltx_authors {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+
+.paper .ltx_creator {
+  display: inline-block;
+  margin: 0 1.25rem 0.75rem 0;
+  vertical-align: top;
+}
+
+.paper .ltx_personname {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.paper .ltx_role_affiliation,
+.paper .ltx_role_email,
+.paper .ltx_contact {
+  display: block;
+}
+
+.paper .ltx_contact_name {
+  display: none;
+}
+
+.paper .ltx_author_notes {
+  display: block;
+  font-size: 0.8rem;
+}
+
+.paper .ltx_abstract {
+  background: var(--subtle);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin: 0 0 2.5rem;
+}
+
+.paper .ltx_title_abstract {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
+.paper h2.ltx_title {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  font-weight: 700;
+  margin: 2.75rem 0 1rem;
+}
+
+.paper h3.ltx_title {
+  font-size: 1.2rem;
+  line-height: 1.35;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+}
+
+.paper h4.ltx_title,
+.paper h5.ltx_title,
+.paper .ltx_title_paragraph {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.paper .ltx_title_paragraph {
+  display: inline;
+  margin-right: 0.5em;
+}
+
+.paper h2 .ltx_tag,
+.paper h3 .ltx_tag,
+.paper h4 .ltx_tag {
+  color: var(--faint);
+  margin-right: 0.5em;
+}
+
+.paper section[id],
+.paper figure[id],
+.paper [id^='bib'] {
+  scroll-margin-top: 1.5rem;
+}
+
+.paper .ltx_para {
+  margin: 0 0 1rem;
+}
+
+.paper .ltx_p {
+  margin: 0 0 0.75rem;
+}
+
+.paper .ltx_para > .ltx_p:last-child {
+  margin-bottom: 0;
+}
+
+.paper a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.paper a:hover {
+  text-decoration: underline;
+}
+
+.paper .ltx_ref,
+.paper .ltx_cite {
+  white-space: nowrap;
+}
+
+.paper .ltx_font_bold {
+  font-weight: 700;
+}
+
+.paper .ltx_font_italic,
+.paper .ltx_emph {
+  font-style: italic;
+}
+
+.paper .ltx_font_typewriter,
+.paper .ltx_verbatim,
+.paper code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+
+.paper .ltx_font_smallcaps {
+  font-variant: small-caps;
+}
+
+.paper .ltx_font_sansserif {
+  font-family: var(--font-sans);
+}
+
+.paper .ltx_underline {
+  text-decoration: underline;
+}
+
+.paper [style*='--ltx-fg-color'] {
+  color: var(--ltx-fg-color);
+}
+
+.paper [style*='--ltx-bg-color'] {
+  background-color: var(--ltx-bg-color);
+}
+
+.paper .ltx_centering,
+.paper .ltx_align_center {
+  text-align: center;
+}
+
+.paper .ltx_align_left {
+  text-align: left;
+}
+
+.paper .ltx_align_right {
+  text-align: right;
+}
+
+.paper .ltx_align_top {
+  vertical-align: top;
+}
+
+.paper .ltx_align_middle {
+  vertical-align: middle;
+}
+
+.paper .ltx_align_bottom {
+  vertical-align: bottom;
+}
+
+/* Lists. LaTeXML writes its own bullets and numbers in .ltx_tag_item. */
+.paper .ltx_itemize,
+.paper .ltx_enumerate {
+  list-style: none;
+  padding-left: 1.75rem;
+  margin: 0 0 1rem;
+}
+
+.paper .ltx_item {
+  position: relative;
+  margin-bottom: 0.4rem;
+}
+
+.paper .ltx_item > .ltx_tag {
+  position: absolute;
+  right: calc(100% + 0.5rem);
+  white-space: nowrap;
+}
+
+.paper .ltx_item > .ltx_para {
+  margin-bottom: 0.25rem;
+}
+
+/* Math and equations */
+.paper math {
+  font-size: 1.05em;
+}
+
+.paper math[display='block'] {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.paper .ltx_equation,
+.paper .ltx_equationgroup,
+.paper .ltx_eqn_table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+}
+
+.paper .ltx_eqn_cell {
+  padding: 0.15rem 0;
+}
+
+.paper .ltx_eqn_center_padleft,
+.paper .ltx_eqn_center_padright {
+  width: 50%;
+}
+
+.paper .ltx_eqn_eqno {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--muted);
+  padding-left: 1rem;
+}
+
+.paper .ltx_eqn_table {
+  display: block;
+  overflow-x: auto;
+}
+
+.paper .ltx_eqn_table > tbody {
+  display: table;
+  width: 100%;
+}
+
+/* Figures and tables */
+.paper figure {
+  margin: 2rem 0;
+}
+
+.paper .ltx_graphics,
+.paper figure img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .paper .ltx_graphics {
+    background: #fff;
+    border-radius: 0.25rem;
+  }
+}
+
+.paper svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.paper figcaption,
+.paper .ltx_caption {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--muted);
+  text-align: left;
+  margin-top: 0.75rem;
+}
+
+.paper .ltx_caption > .ltx_tag {
+  font-weight: 600;
+  color: var(--ink);
+  margin-right: 0.25em;
+}
+
+.paper .ltx_flex_figure {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.paper .ltx_flex_cell {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.paper .ltx_flex_break {
+  flex-basis: 100%;
+  height: 0;
+}
+
+.paper figure.ltx_table {
+  overflow-x: auto;
+}
+
+.paper table.ltx_tabular {
+  display: inline-table;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0 auto;
+}
+
+.paper .ltx_td,
+.paper .ltx_th {
+  padding: 0.3rem 0.6rem;
+}
+
+.paper .ltx_th {
+  font-weight: 600;
+}
+
+.paper .ltx_border_t {
+  border-top: 1px solid var(--ink);
+}
+
+.paper .ltx_border_tt {
+  border-top: 2px solid var(--ink);
+}
+
+.paper .ltx_border_ttt {
+  border-top: 3px double var(--ink);
+}
+
+.paper .ltx_border_b {
+  border-bottom: 1px solid var(--ink);
+}
+
+.paper .ltx_border_bb {
+  border-bottom: 2px solid var(--ink);
+}
+
+.paper .ltx_border_l {
+  border-left: 1px solid var(--ink);
+}
+
+.paper .ltx_border_r {
+  border-right: 1px solid var(--ink);
+}
+
+/* Footnotes open on hover, like on arxiv.org. */
+.paper .ltx_note {
+  position: relative;
+}
+
+.paper .ltx_note_mark {
+  color: var(--accent);
+  cursor: help;
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+.paper .ltx_note_outer {
+  display: none;
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  top: 1.5em;
+  width: min(22rem, 70vw);
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.paper .ltx_note:hover .ltx_note_outer {
+  display: block;
+}
+
+.paper .ltx_note_content > .ltx_note_mark,
+.paper .ltx_note_type {
+  display: none;
+}
+
+/* Theorems, quotes, listings */
+.paper .ltx_theorem,
+.paper .ltx_proof {
+  margin: 1.25rem 0;
+}
+
+.paper .ltx_quote {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+.paper .ltx_listing {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  background: var(--subtle);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+/* Bibliography */
+.paper .ltx_biblist {
+  list-style: none;
+  padding: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.paper .ltx_bibitem {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  scroll-margin-top: 1.5rem;
+}
+
+.paper .ltx_bibitem > .ltx_tag {
+  flex: none;
+  color: var(--faint);
+  min-width: 2rem;
+}
+
+.paper .ltx_bibitem:target {
+  background: var(--accent-soft);
+  border-radius: 0.25rem;
+}
+
+.paper .ltx_bibblock {
+  display: inline;
+}
+
+/* LaTeXML chrome that is not part of the paper */
+.paper .ltx_ERROR,
+.paper .ltx_TOC,
+.paper .ltx_page_logo,
+.paper .ltx_page_navbar,
+.paper .ltx_role_newpage {
+  display: none;
+}
+
+/* KaTeX in chat answers */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
