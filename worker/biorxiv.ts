@@ -34,7 +34,11 @@ export async function fetchBiorxivPaper(id: string): Promise<LoadedPaper> {
   const { page, url } = await fetchBiorxivPage(`${id}.full`)
   const article = extractDiv(page, 'class="article fulltext-view')
   if (!article) {
-    throw new PaperError('bioRxiv has no full text for this paper. It may only be available as a PDF.', 404)
+    // New preprints start as PDF only. bioRxiv adds the full text a few days later.
+    throw new PaperError(
+      "bioRxiv hasn't published the full text of this paper yet, only the PDF. New preprints usually get it within a few days.",
+      404,
+    )
   }
 
   const title = readMeta(page, 'citation_title')[0] || id

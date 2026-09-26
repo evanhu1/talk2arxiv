@@ -74,7 +74,7 @@ const SITES: Record<
   },
 }
 
-export default function Home() {
+export default function Home({ unrecognizedLink }: { unrecognizedLink: string | null }) {
   const site = SITES[currentSite()]
   const [input, setInput] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -109,6 +109,12 @@ export default function Home() {
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-[12vh] pb-16">
+        {unrecognizedLink && (
+          <p className="mb-8 rounded-xl bg-accent-soft px-4 py-3 text-[14px] leading-relaxed text-accent">
+            We could not find an arXiv ID or bioRxiv DOI in{' '}
+            <code className="font-mono text-[13px] break-all">{unrecognizedLink}</code>. Paste the paper's link below.
+          </p>
+        )}
         <h1 className="font-serif text-[40px] leading-[1.1] font-semibold tracking-tight md:text-[52px]">
           Talk to any <span className="text-accent">{site.name}</span> paper
         </h1>

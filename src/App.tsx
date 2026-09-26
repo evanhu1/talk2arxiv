@@ -6,8 +6,10 @@ import { paperIdFromPath } from '../shared/papers'
 const PaperPage = lazy(() => import('./pages/PaperPage'))
 
 export default function App() {
-  const paperId = paperIdFromPath(window.location.pathname)
-  if (!paperId) return <Home />
+  const path = window.location.pathname
+  const paperId = paperIdFromPath(path)
+  // Any other path is a link we could not read. Say so instead of silently showing home.
+  if (!paperId) return <Home unrecognizedLink={path === '/' ? null : path} />
   return (
     <Suspense fallback={null}>
       <PaperPage key={paperId} paperId={paperId} />
