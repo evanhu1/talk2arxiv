@@ -16,36 +16,69 @@
   ],
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/",
       "has": [
         {
           "type": "host",
           "value": "talk2biorxiv.org"
         }
       ],
-      "destination": "https://www.talk2biorxiv.org/:path*",
+      "destination": "https://www.talk2biorxiv.org/",
       "permanent": true
     },
     {
-      "source": "/:path*",
+      "source": "/:path+",
+      "has": [
+        {
+          "type": "host",
+          "value": "talk2biorxiv.org"
+        }
+      ],
+      "destination": "https://www.talk2biorxiv.org/:path+",
+      "permanent": true
+    },
+    {
+      "source": "/",
       "has": [
         {
           "type": "host",
           "value": "talk2bioarxiv.org"
         }
       ],
-      "destination": "https://www.talk2biorxiv.org/:path*",
+      "destination": "https://www.talk2biorxiv.org/",
       "permanent": true
     },
     {
-      "source": "/:path*",
+      "source": "/:path+",
+      "has": [
+        {
+          "type": "host",
+          "value": "talk2bioarxiv.org"
+        }
+      ],
+      "destination": "https://www.talk2biorxiv.org/:path+",
+      "permanent": true
+    },
+    {
+      "source": "/",
       "has": [
         {
           "type": "host",
           "value": "www.talk2bioarxiv.org"
         }
       ],
-      "destination": "https://www.talk2biorxiv.org/:path*",
+      "destination": "https://www.talk2biorxiv.org/",
+      "permanent": true
+    },
+    {
+      "source": "/:path+",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.talk2bioarxiv.org"
+        }
+      ],
+      "destination": "https://www.talk2biorxiv.org/:path+",
       "permanent": true
     }
   ]
