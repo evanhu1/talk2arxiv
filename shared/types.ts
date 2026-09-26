@@ -9,6 +9,13 @@ export interface Paper {
   html: string
 }
 
+// Just what a link preview needs. Works for any paper, even PDF-only ones.
+export interface PaperMeta {
+  id: string
+  title: string
+  abstract: string
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string

@@ -43,7 +43,7 @@ export default function PaperPage({ paperId }: { paperId: string }) {
 
   useEffect(() => {
     if (!paper) return
-    document.title = `${paper.title} · Talk2Arxiv`
+    document.title = `Talk to ${paper.title}`
   }, [paper])
 
   const onLoaded = useCallback((loaded: Paper, items: OutlineItem[]) => {

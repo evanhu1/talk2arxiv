@@ -1,5 +1,6 @@
 import type { ApiError, ChatRequest, Paper } from '../shared/types'
 import { estimateTokens, MAX_PAPER_TOKENS, paperFitsContext, streamAnswer, validateChatRequest } from './chat'
+import { getPaperMeta } from './meta'
 import { getPaper, isArxivId, PaperError, type LoadedPaper } from './paper'
 
 // In production, Vercel hosts the React app and rewrites /api/* to this Worker
@@ -15,6 +16,13 @@ export default {
         const body: Paper = { id: paper.id, title: paper.title, sourceUrl: paper.sourceUrl, html: paper.html }
         // s-maxage lets Vercel's CDN, which proxies /api/*, cache papers for a day.
         return Response.json(body, { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } })
+      }
+
+      if (request.method === 'GET' && url.pathname.startsWith('/api/meta/')) {
+        const id = decodeURIComponent(url.pathname.slice('/api/meta/'.length))
+        if (!isArxivId(id)) throw new PaperError(`"${id}" is not a valid arXiv ID.`, 400)
+        const meta = await getPaperMeta(id, ctx)
+        return Response.json(meta, { headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=604800' } })
       }
 
       if (request.method === 'POST' && url.pathname === '/api/chat') {
