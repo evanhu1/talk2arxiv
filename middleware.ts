@@ -1,6 +1,7 @@
 import { next } from '@vercel/functions'
-import { paperIdFromPath, readerPath, SOURCE_NAMES, sourceOf, type Source } from './shared/papers'
-import type { PaperMeta } from './shared/types'
+// Vercel runs this file as Node ESM without bundling, so imports need .js.
+import { paperIdFromPath, readerPath, SOURCE_NAMES, sourceOf, type Source } from './shared/papers.js'
+import type { PaperMeta } from './shared/types.js'
 
 // Vercel Routing Middleware. Link-preview bots (Slack, iMessage, X, Discord…)
 // do not run JavaScript, so they would only see the app's generic tags. For
