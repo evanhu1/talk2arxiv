@@ -4,7 +4,8 @@ import { fetchArxivPaper } from './arxiv'
 import { fetchBiorxivPaper } from './biorxiv'
 
 const CACHE_VERSION = 'v2'
-const CACHE_TTL_SECONDS = 60 * 60 * 24
+// A versioned ID (1706.03762v7, 10.1101/...v2) never changes, so keep it longer.
+const cacheTtl = (id: string) => (/v\d+$/.test(id) ? 60 * 60 * 24 * 30 : 60 * 60 * 24)
 
 export interface LoadedPaper extends Paper {
   // Plain text with LaTeX math, for the model's context.
@@ -43,7 +44,7 @@ async function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper
   const response = new Response(JSON.stringify(paper), {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
+      'Cache-Control': `public, max-age=${cacheTtl(id)}`,
     },
   })
   ctx.waitUntil(cache.put(cacheKey, response))

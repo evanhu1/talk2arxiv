@@ -24,6 +24,8 @@ export async function fetchBiorxivPage(path: string): Promise<{ page: string; ur
   if (response.status === 403 || response.status === 404) {
     throw new PaperError('bioRxiv has no paper with this DOI.', 404)
   }
+  // bioRxiv limits bursts of requests, even from Cloudflare. It clears in about a minute.
+  if (response.status === 429) throw new PaperError('bioRxiv is busy right now. Try again in a minute.', 503)
   if (!response.ok) throw new PaperError(`bioRxiv returned an error (${response.status}). Try again soon.`, 502)
   return { page: await response.text(), url: response.url }
 }
