@@ -85,7 +85,7 @@ const LINE = '#e5e3df'
 function paperCard({ site, sourceLabel, title, authors, abstract }: CardInput): ReactElement {
   const titleSize = title.length > 90 ? 44 : title.length > 55 ? 50 : 58
   // Long titles take more lines, so show less abstract.
-  const abstractLength = title.length > 55 ? 260 : 420
+  const abstractLength = title.length > 75 ? 260 : title.length > 40 ? 360 : 420
 
   return h(
     'div',
