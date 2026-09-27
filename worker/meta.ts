@@ -37,7 +37,7 @@ export async function getPaperMeta(id: string, ctx: ExecutionContext): Promise<P
   return meta
 }
 
-const metaCacheKey = (id: string) => new Request(`https://cache.talk2arxiv.internal/meta/v4/${id}`)
+const metaCacheKey = (id: string) => new Request(`https://cache.talk2arxiv.internal/meta/v5/${id}`)
 
 // Title, authors, and abstract from any bioRxiv article page.
 export function biorxivMeta(id: string, page: string): PaperMeta {
@@ -58,7 +58,47 @@ export function rememberMeta(meta: PaperMeta, ctx: ExecutionContext) {
   ctx.waitUntil(caches.default.put(metaCacheKey(meta.id), response))
 }
 
+// Crossref, the DOI registry, has every bioRxiv paper's title, authors, and
+// abstract. It is fast and, unlike bioRxiv itself, not quick to rate-limit.
+const CROSSREF_API = 'https://api.crossref.org/works/'
+const CROSSREF_USER_AGENT = 'Talk2bioRxiv/2.0 (+https://talk2biorxiv.org)'
+
+interface CrossrefWork {
+  title?: string[]
+  author?: { given?: string; family?: string; name?: string }[]
+  abstract?: string
+}
+
+async function fetchCrossrefMeta(id: string): Promise<PaperMeta | null> {
+  const doi = id.replace(/v\d+$/, '') // Crossref registers the DOI, not each version.
+  try {
+    const response = await fetch(CROSSREF_API + doi, {
+      headers: { 'User-Agent': CROSSREF_USER_AGENT },
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!response.ok) return null
+    const work = ((await response.json()) as { message: CrossrefWork }).message
+    const title = work.title?.[0]?.replace(/\s+/g, ' ').trim()
+    if (!title) return null
+    return {
+      id,
+      title,
+      authors: (work.author ?? []).map((a) => a.name ?? [a.given, a.family].filter(Boolean).join(' ')),
+      // The abstract is JATS XML: drop the tags and the "Abstract" heading.
+      abstract: (work.abstract ?? '')
+        .replace(/<jats:title>[\s\S]*?<\/jats:title>/g, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    }
+  } catch {
+    return null
+  }
+}
+
 async function fetchBiorxivMeta(id: string): Promise<PaperMeta> {
+  const fromCrossref = await fetchCrossrefMeta(id)
+  if (fromCrossref) return fromCrossref
   const { page } = await fetchBiorxivPage(id)
   const title = readMeta(page, 'citation_title')[0]
   if (!title) throw new PaperError('bioRxiv has no paper with this DOI.', 404)
