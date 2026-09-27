@@ -17,6 +17,7 @@
   "include": [
     "vite.config.ts",
     "middleware.ts",
+    "api",
     "shared"
   ]
 }

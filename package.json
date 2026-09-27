@@ -23,6 +23,7 @@
     "@embedpdf/plugin-tiling": "^2.15.1",
     "@embedpdf/plugin-viewport": "^2.15.1",
     "@embedpdf/plugin-zoom": "^2.15.1",
+    "@resvg/resvg-js": "^2.6.2",
     "@vercel/functions": "^3.9.9",
     "cn": "^0.4.0",
     "dompurify": "^3.4.16",
@@ -35,7 +36,8 @@
     "react-markdown": "^10.1.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "satori": "^0.33.5"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.60.2",

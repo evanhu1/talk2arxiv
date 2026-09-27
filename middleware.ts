@@ -13,8 +13,6 @@ export const config = {
   matcher: ['/', '/abs/:path*', '/pdf/:path*', '/html/:path*', '/content/:path*'],
 }
 
-// The same Worker that vercel.json rewrites /api/* to.
-const API = 'https://talk2arxiv.hu-evan123.workers.dev/api/meta/'
 
 const SITES: Record<Source, { origin: string; name: string; image: string; tagline: string; description: string }> = {
   arxiv: {
@@ -56,20 +54,27 @@ export default async function middleware(request: Request) {
   const source = id ? sourceOf(id) : null
   if (!id || !source) return next()
 
+  // A shared paper link sells the paper: its title, and an image of its first
+  // page (title, authors, abstract) from /api/og. The description stays the
+  // site's pitch.
   const site = SITES[source]
-  const meta = await fetchMeta(id)
+  const meta = await fetchMeta(site.origin, id)
   return preview({
     title: meta ? `Talk to ${meta.title}` : `Talk to this ${SOURCE_NAMES[source]} paper`,
-    description: meta?.abstract ? truncate(meta.abstract, 200) : site.description,
+    description: site.description,
     pageUrl: site.origin + readerPath(id),
     site,
     type: 'article',
+    image: `${site.origin}/api/og?id=${encodeURIComponent(id)}`,
+    imageAlt: meta ? meta.title : site.tagline,
   })
 }
 
-async function fetchMeta(id: string): Promise<PaperMeta | null> {
+// Through the public site, so the CDN answers repeat requests. The first
+// request may wait on a slow, rate-limited source, so allow it time.
+async function fetchMeta(origin: string, id: string): Promise<PaperMeta | null> {
   try {
-    const response = await fetch(API + id, { signal: AbortSignal.timeout(4000) })
+    const response = await fetch(`${origin}/api/meta/${id}`, { signal: AbortSignal.timeout(8000) })
     return response.ok ? ((await response.json()) as PaperMeta) : null
   } catch {
     return null
@@ -78,6 +83,9 @@ async function fetchMeta(id: string): Promise<PaperMeta | null> {
 
 interface Preview {
   title: string
+  // Defaults to the site's image.
+  image?: string
+  imageAlt?: string
   description: string
   pageUrl: string
   site: (typeof SITES)[Source]
@@ -95,7 +103,7 @@ function preview(page: Preview) {
   })
 }
 
-function previewPage({ title, description, pageUrl, site, type }: Preview) {
+function previewPage({ title, description, pageUrl, site, type, image = site.image, imageAlt }: Preview) {
   const t = escapeHtml(title)
   const d = escapeHtml(description)
   const u = escapeHtml(pageUrl)
@@ -111,14 +119,14 @@ function previewPage({ title, description, pageUrl, site, type }: Preview) {
 <meta property="og:title" content="${t}">
 <meta property="og:description" content="${d}">
 <meta property="og:url" content="${u}">
-<meta property="og:image" content="${site.image}">
+<meta property="og:image" content="${escapeHtml(image)}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="${site.name}: ${escapeHtml(site.tagline.toLowerCase())}">
+<meta property="og:image:alt" content="${escapeHtml(imageAlt ?? `${site.name}: ${site.tagline.toLowerCase()}`)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${t}">
 <meta name="twitter:description" content="${d}">
-<meta name="twitter:image" content="${site.image}">
+<meta name="twitter:image" content="${escapeHtml(image)}">
 </head>
 <body>
 <h1>${t}</h1>
@@ -127,11 +135,6 @@ function previewPage({ title, description, pageUrl, site, type }: Preview) {
 </body>
 </html>
 `
-}
-
-function truncate(text: string, max: number) {
-  if (text.length <= max) return text
-  return `${text.slice(0, text.lastIndexOf(' ', max - 1)).replace(/[,.;:]$/, '')}…`
 }
 
 function escapeHtml(value: string) {

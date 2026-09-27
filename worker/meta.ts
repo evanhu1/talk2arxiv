@@ -18,7 +18,7 @@ export async function getPaperMeta(id: string, ctx: ExecutionContext): Promise<P
   const hit = memory.get(id)
   if (hit) return hit
 
-  const cacheKey = new Request(`https://cache.talk2arxiv.internal/meta/v3/${id}`)
+  const cacheKey = metaCacheKey(id)
   const cached = await caches.default.match(cacheKey)
   const meta: PaperMeta = cached
     ? await cached.json()
@@ -37,12 +37,32 @@ export async function getPaperMeta(id: string, ctx: ExecutionContext): Promise<P
   return meta
 }
 
+const metaCacheKey = (id: string) => new Request(`https://cache.talk2arxiv.internal/meta/v4/${id}`)
+
+// Title, authors, and abstract from any bioRxiv article page.
+export function biorxivMeta(id: string, page: string): PaperMeta {
+  return {
+    id,
+    title: readMeta(page, 'citation_title')[0] || id,
+    authors: readMeta(page, 'citation_author'),
+    // The plain "description" tag is bioRxiv's site blurb. DC.Description is the abstract.
+    abstract: readMeta(page, 'DC.Description')[0] ?? '',
+  }
+}
+
+// Saves metadata learned while loading a paper, so link previews for it need
+// no extra request to a rate-limited source.
+export function rememberMeta(meta: PaperMeta, ctx: ExecutionContext) {
+  memory.set(meta.id, meta)
+  const response = Response.json(meta, { headers: { 'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}` } })
+  ctx.waitUntil(caches.default.put(metaCacheKey(meta.id), response))
+}
+
 async function fetchBiorxivMeta(id: string): Promise<PaperMeta> {
   const { page } = await fetchBiorxivPage(id)
   const title = readMeta(page, 'citation_title')[0]
   if (!title) throw new PaperError('bioRxiv has no paper with this DOI.', 404)
-  // The plain "description" tag is bioRxiv's site blurb. DC.Description is the abstract.
-  return { id, title, abstract: readMeta(page, 'DC.Description')[0] ?? '' }
+  return biorxivMeta(id, page)
 }
 
 async function fetchArxivMeta(id: string): Promise<PaperMeta> {
@@ -56,7 +76,8 @@ async function fetchArxivMeta(id: string): Promise<PaperMeta> {
   // For unknown IDs, arXiv returns an entry whose title is "Error".
   if (!title || title === 'Error') throw new PaperError(`arXiv has no paper "${id}".`, 404)
 
-  return { id, title, abstract: tagText(entry, 'summary') ?? '' }
+  const authors = [...entry.matchAll(/<author>\s*<name>([^<]*)<\/name>/g)].map((match) => match[1].trim())
+  return { id, title, authors, abstract: tagText(entry, 'summary') ?? '' }
 }
 
 function tagText(xml: string, tag: string) {

@@ -18,6 +18,7 @@ export interface Paper {
 export interface PaperMeta {
   id: string
   title: string
+  authors: string[]
   abstract: string
 }
 

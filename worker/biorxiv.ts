@@ -1,4 +1,5 @@
 import { fetchWithRetry } from './fetch'
+import { biorxivMeta, rememberMeta } from './meta'
 import { decodeEntities, NoHtmlError, PaperError, processArticle, type LoadedPaper } from './paper'
 
 // bioRxiv's own full-text page, e.g.
@@ -31,20 +32,22 @@ export async function fetchBiorxivPage(path: string): Promise<{ page: string; ur
   return { page: await response.text(), url: response.url }
 }
 
-export async function fetchBiorxivPaper(id: string): Promise<LoadedPaper> {
+export async function fetchBiorxivPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper> {
   const { page, url } = await fetchBiorxivPage(`${id}.full`)
+  // Link previews need the title, authors, and abstract. Save them now.
+  const meta = biorxivMeta(id, page)
+  rememberMeta(meta, ctx)
   const article = extractDiv(page, 'class="article fulltext-view')
   if (!article) {
     // New preprints start as PDF only. bioRxiv adds the full text a few days later.
     // The page still has the title and abstract, so the fallback needs no second request.
     throw new NoHtmlError(
       "bioRxiv hasn't published the full text of this paper yet, only the PDF. New preprints usually get it within a few days.",
-      { id, title: readMeta(page, 'citation_title')[0] || id, abstract: readMeta(page, 'DC.Description')[0] ?? '' },
+      meta,
     )
   }
 
-  const title = readMeta(page, 'citation_title')[0] || id
-  const authors = readMeta(page, 'citation_author')
+  const { title, authors } = meta
   // Figure and table images live next to the PDF:
   // .../early/2022/03/10/2021.10.04.463034.full.pdf -> .../2021.10.04.463034/T1.large.jpg
   const assetBase = readMeta(page, 'citation_pdf_url')[0]?.replace(/\.full\.pdf$/, '')

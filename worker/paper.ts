@@ -60,7 +60,7 @@ async function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper
 
   let paper: LoadedPaper
   try {
-    paper = sourceOf(id) === 'biorxiv' ? await fetchBiorxivPaper(id) : await fetchArxivPaper(id)
+    paper = sourceOf(id) === 'biorxiv' ? await fetchBiorxivPaper(id, ctx) : await fetchArxivPaper(id)
   } catch (err) {
     if (!(err instanceof NoHtmlError)) throw err
     paper = await loadPdfPaper(id, ctx, err.meta)
