@@ -1,9 +1,7 @@
 import { ExternalLink, FileText, MessageSquareText } from 'lucide-react'
 import { displayId, SOURCE_NAMES, sourceOf, sourcePageUrl, sourcePdfUrl } from '../../shared/papers'
-import { useThemeColor } from '../lib/useThemeColor'
 import GithubIcon from './GithubIcon'
 import HelpButton from './HelpButton'
-import { GooeyNav } from './ui/gooey-nav'
 
 interface Props {
   paperId: string
@@ -15,8 +13,6 @@ interface Props {
 }
 
 export default function TopBar({ paperId, title, chatOpen, onChatOpenChange, compact }: Props) {
-  const accent = useThemeColor('--accent')
-
   return (
     <header className="relative z-50 flex h-12 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 md:px-5">
       <div className="min-w-0 flex-1">
@@ -29,17 +25,15 @@ export default function TopBar({ paperId, title, chatOpen, onChatOpenChange, com
       <HelpButton className="-mr-1" />
 
       {compact ? (
-        <GooeyNav
-          items={[
-            { label: 'Paper', icon: <FileText /> },
-            { label: 'Chat', icon: <MessageSquareText /> },
-          ]}
-          value={chatOpen ? 1 : 0}
-          onChange={(index) => onChatOpenChange(index === 1)}
-          size="md"
-          activeColor={accent}
-          className="shrink-0"
-        />
+        // Phones show the paper or the chat, never both. One button goes to the other.
+        <button
+          type="button"
+          onClick={() => onChatOpenChange(!chatOpen)}
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[14px] font-medium text-white hover:bg-accent-strong"
+        >
+          {chatOpen ? <FileText className="size-4" /> : <MessageSquareText className="size-4" />}
+          {chatOpen ? 'Paper' : 'Chat'}
+        </button>
       ) : (
         <nav className="flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-muted">
           <a
