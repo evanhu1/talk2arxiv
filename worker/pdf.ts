@@ -1,6 +1,7 @@
 import { sourceOf, sourcePdfUrl, SOURCE_NAMES } from '../shared/papers'
 import { USER_AGENT as ARXIV_USER_AGENT } from './arxiv'
 import { USER_AGENT as BIORXIV_USER_AGENT } from './biorxiv'
+import { fetchWithRetry } from './fetch'
 import { PaperError } from './paper'
 
 // The PDF fallback, for papers with no HTML version: brand-new bioRxiv
@@ -18,7 +19,7 @@ export async function getPdf(id: string, ctx: ExecutionContext): Promise<Respons
 
   let response: Response
   try {
-    response = await fetch(sourcePdfUrl(id), {
+    response = await fetchWithRetry(sourcePdfUrl(id), {
       headers: { 'User-Agent': source === 'biorxiv' ? BIORXIV_USER_AGENT : ARXIV_USER_AGENT },
     })
   } catch {

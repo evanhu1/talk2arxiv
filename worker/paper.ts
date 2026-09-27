@@ -1,5 +1,5 @@
 import { displayId, sourceOf, sourcePdfUrl } from '../shared/papers'
-import type { Paper } from '../shared/types'
+import type { Paper, PaperMeta } from '../shared/types'
 import { fetchArxivPaper } from './arxiv'
 import { fetchBiorxivPaper } from './biorxiv'
 import { getPaperMeta } from './meta'
@@ -25,9 +25,13 @@ export class PaperError extends Error {
   }
 }
 
-// The paper exists, but only as a PDF. Triggers the PDF fallback.
+// The paper exists, but only as a PDF. Triggers the PDF fallback. `meta` saves
+// a request when the source already told us the title.
 export class NoHtmlError extends PaperError {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly meta?: PaperMeta,
+  ) {
     super(message, 404)
   }
 }
@@ -59,7 +63,7 @@ async function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper
     paper = sourceOf(id) === 'biorxiv' ? await fetchBiorxivPaper(id) : await fetchArxivPaper(id)
   } catch (err) {
     if (!(err instanceof NoHtmlError)) throw err
-    paper = await loadPdfPaper(id, ctx)
+    paper = await loadPdfPaper(id, ctx, err.meta)
   }
   const response = new Response(JSON.stringify(paper), {
     headers: {
@@ -72,8 +76,8 @@ async function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper
 }
 
 // Fetching the PDF also checks that the paper exists at all.
-async function loadPdfPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper> {
-  const [meta] = await Promise.all([getPaperMeta(id, ctx).catch(() => null), getPdf(id, ctx)])
+async function loadPdfPaper(id: string, ctx: ExecutionContext, known?: PaperMeta): Promise<LoadedPaper> {
+  const [meta] = await Promise.all([known ?? getPaperMeta(id, ctx).catch(() => null), getPdf(id, ctx)])
   return {
     id,
     source: sourceOf(id) ?? 'arxiv',

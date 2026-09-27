@@ -25,6 +25,12 @@ export const isPaperId = (id: string) => sourceOf(id) !== null
 
 export const SOURCE_NAMES: Record<Source, string> = { arxiv: 'arXiv', biorxiv: 'bioRxiv' }
 
+// The public site for each source's papers.
+export const SITE_ORIGINS: Record<Source, string> = {
+  arxiv: 'https://www.talk2arxiv.org',
+  biorxiv: 'https://www.talk2biorxiv.org',
+}
+
 // The paper's page on its source site.
 export function sourcePageUrl(id: string) {
   return sourceOf(id) === 'biorxiv' ? `https://www.biorxiv.org/content/${id}` : `https://arxiv.org/abs/${id}`

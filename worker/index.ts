@@ -1,6 +1,6 @@
 import type { ApiError, ChatRequest, Paper } from '../shared/types'
 import { estimateTokens, MAX_PAPER_TOKENS, paperFitsContext, streamAnswer, validateChatRequest } from './chat'
-import { isPaperId } from '../shared/papers'
+import { isPaperId, SITE_ORIGINS } from '../shared/papers'
 import { getPaperMeta } from './meta'
 import { getPaper, PaperError, type LoadedPaper } from './paper'
 import { getPdf, pdfDataUrl } from './pdf'
@@ -84,13 +84,14 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext) {
     )
   }
 
-  // PDF papers go to the model as the file. The provider fetches it from this
-  // Worker by URL, except in local dev, where it cannot reach localhost.
+  // PDF papers go to the model as the file. The provider fetches it by URL
+  // from the public site, whose CDN caches it, except in local dev, where the
+  // PDF goes inline.
   let pdf: string | null = null
   if (paper.format === 'pdf') {
-    const url = new URL(request.url)
-    const local = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
-    pdf = local ? await pdfDataUrl(paper.id, ctx) : `${url.origin}/api/pdf/${paper.id}`
+    const { hostname } = new URL(request.url)
+    const local = hostname === 'localhost' || hostname === '127.0.0.1'
+    pdf = local ? await pdfDataUrl(paper.id, ctx) : `${SITE_ORIGINS[paper.source]}/api/pdf/${paper.id}`
   }
 
   return streamAnswer(env.OPENROUTER_API_KEY, paper, body.messages, pdf)
