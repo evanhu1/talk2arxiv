@@ -60,7 +60,8 @@ export default async function middleware(request: Request) {
   const site = SITES[source]
   const meta = await fetchMeta(site.origin, id)
   return preview({
-    title: meta ? `Talk to ${meta.title}` : `Talk to this ${SOURCE_NAMES[source]} paper`,
+    // Quote marks set the paper's title apart from "Talk to".
+    title: meta ? `Talk to “${meta.title}”` : `Talk to this ${SOURCE_NAMES[source]} paper`,
     description: site.description,
     pageUrl: site.origin + readerPath(id),
     site,
