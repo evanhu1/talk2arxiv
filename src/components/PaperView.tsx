@@ -48,6 +48,22 @@ export default function PaperView({ paperId, articleRef, onLoaded, onAsk, onExpl
     // onLoaded is a fresh function each render. Run once per loaded paper.
   }, [state, articleRef])
 
+  // Inline math cannot wrap. Let formulas wider than the column scroll on their
+  // own, and check again whenever the column resizes (phone rotation, chat).
+  useEffect(() => {
+    const root = articleRef.current
+    if (state.status !== 'ready' || !root) return
+    const mark = () => {
+      for (const math of root.querySelectorAll<HTMLElement>('math:not([display="block"])')) {
+        math.classList.toggle('wide-math', math.scrollWidth > root.clientWidth)
+      }
+    }
+    mark()
+    const observer = new ResizeObserver(mark)
+    observer.observe(root)
+    return () => observer.disconnect()
+  }, [state, articleRef])
+
   if (state.status === 'loading') return <Skeleton paperId={paperId} />
   if (state.status === 'error') return <LoadError paperId={paperId} message={state.message} />
 
@@ -70,11 +86,13 @@ export default function PaperView({ paperId, articleRef, onLoaded, onAsk, onExpl
   }
 
   return (
-    <div className="mx-auto w-full max-w-[860px] px-3 py-4 md:px-8 md:py-8">
-      <div className="rounded-2xl border border-line bg-surface px-5 py-8 shadow-[0_1px_2px_rgb(0_0_0/0.03)] md:px-14 md:py-14">
+    // On phones the paper sits right on the page; wider screens get a card.
+    <div className="mx-auto w-full max-w-[860px] md:px-8 md:py-8">
+      {/* overflow-x-clip: whatever a paper contains, the page never scrolls sideways. */}
+      <div className="overflow-x-clip px-5 py-6 md:rounded-2xl md:border md:border-line md:bg-surface md:px-14 md:py-14 md:shadow-[0_1px_2px_rgb(0_0_0/0.03)]">
         <div ref={articleRef} className="paper" dangerouslySetInnerHTML={{ __html: html }} />
       </div>
-      <p className="mt-4 text-center text-[12px] text-faint">
+      <p className="mt-4 px-5 pb-8 text-center text-[12px] text-faint md:px-0 md:pb-0">
         HTML rendering from {sourceName(paperId)}.{' '}
         <a href={sourcePdfUrl(paperId)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-muted">
           View the PDF
@@ -124,8 +142,8 @@ function headingText(heading: HTMLElement) {
 
 function Skeleton({ paperId }: { paperId: string }) {
   return (
-    <div className="mx-auto w-full max-w-[860px] px-3 py-4 md:px-8 md:py-8" aria-busy="true">
-      <div className="rounded-2xl border border-line bg-surface px-5 py-8 md:px-14 md:py-14">
+    <div className="mx-auto w-full max-w-[860px] md:px-8 md:py-8" aria-busy="true">
+      <div className="px-5 py-6 md:rounded-2xl md:border md:border-line md:bg-surface md:px-14 md:py-14">
         <div className="animate-pulse space-y-4">
           <div className="h-8 w-4/5 rounded-lg bg-subtle" />
           <div className="h-8 w-3/5 rounded-lg bg-subtle" />

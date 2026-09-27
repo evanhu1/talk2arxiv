@@ -2,6 +2,7 @@ import { ExternalLink, FileText, MessageSquareText } from 'lucide-react'
 import { displayId, SOURCE_NAMES, sourceOf, sourcePageUrl, sourcePdfUrl } from '../../shared/papers'
 import { useThemeColor } from '../lib/useThemeColor'
 import GithubIcon from './GithubIcon'
+import HelpButton from './HelpButton'
 import { GooeyNav } from './ui/gooey-nav'
 
 interface Props {
@@ -25,6 +26,8 @@ export default function TopBar({ paperId, title, chatOpen, onChatOpenChange, com
         <p className="truncate text-[11px] leading-tight text-faint">{displayId(paperId)}</p>
       </div>
 
+      <HelpButton className="-mr-1" />
+
       {compact ? (
         <GooeyNav
           items={[
@@ -33,7 +36,7 @@ export default function TopBar({ paperId, title, chatOpen, onChatOpenChange, com
           ]}
           value={chatOpen ? 1 : 0}
           onChange={(index) => onChatOpenChange(index === 1)}
-          size="xs"
+          size="md"
           activeColor={accent}
           className="shrink-0"
         />

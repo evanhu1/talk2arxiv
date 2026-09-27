@@ -239,9 +239,35 @@ body {
   text-decoration: underline;
 }
 
-.paper .ltx_ref,
-.paper .ltx_cite {
+/* Keep short reference tags ("Fig. 3", "[12]") together, but let long
+   citation lists wrap: nowrap on them pushed pages wider than phones. */
+.paper .ltx_ref_tag {
   white-space: nowrap;
+}
+
+/* Nothing in a paper may widen the page. Long URLs and words break;
+   authors' fixed-width boxes shrink to fit. */
+.paper {
+  overflow-wrap: anywhere;
+}
+
+.paper .ltx_figure_panel,
+.paper .ltx_parbox,
+.paper .ltx_minipage,
+.paper .ltx_inline-block,
+.paper .ltx_block,
+.paper img,
+.paper video {
+  max-width: 100%;
+}
+
+/* Inline math wider than the column (marked by PaperView) scrolls by itself. */
+.paper math.wide-math {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  vertical-align: middle;
 }
 
 .paper .ltx_font_bold {
@@ -362,7 +388,10 @@ body {
   padding-left: 1rem;
 }
 
-.paper .ltx_eqn_table {
+/* Equations wider than the column scroll on their own. */
+.paper .ltx_eqn_table,
+.paper table.ltx_equation,
+.paper table.ltx_equationgroup {
   display: block;
   overflow-x: auto;
 }
@@ -553,6 +582,7 @@ body {
 .paper .ltx_bibitem {
   display: flex;
   gap: 0.5rem;
+  min-width: 0;
   margin-bottom: 0.6rem;
   scroll-margin-top: 1.5rem;
 }
@@ -741,6 +771,12 @@ body {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.6rem;
+}
+
+/* Flex items default to min-width: auto, which lets long references overflow. */
+.paper .ltx_bibitem > *,
+.paper .ref-list ol.cit-list > li > * {
+  min-width: 0;
 }
 
 .paper .ref-list .ref-label {

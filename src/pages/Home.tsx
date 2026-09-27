@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { displayId, parsePaperInput, readerPath, type Source } from '../../shared/papers'
 import GithubIcon from '../components/GithubIcon'
+import HelpButton from '../components/HelpButton'
 import { currentSite } from '../lib/site'
 
 interface ListedPaper {
@@ -96,7 +97,8 @@ export default function Home({ unrecognizedLink }: { unrecognizedLink: string | 
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex h-14 items-center justify-end px-5">
+      <header className="flex h-14 items-center justify-end gap-1 px-5">
+        <HelpButton />
         <a
           href="https://github.com/evanhu1/talk2arxiv"
           target="_blank"

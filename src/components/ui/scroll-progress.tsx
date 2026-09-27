@@ -1,5 +1,7 @@
 // From Rare UI (https://rareui.com). Copyright (c) 2026 Swami Malode.
 // MIT + Commons Clause + Attribution license. Keep this notice.
+// Talk2Arxiv changes: the menu is capped to the window's height and width, and
+// long section names are truncated.
 import * as React from "react"
 import {
   AnimatePresence,
@@ -178,19 +180,19 @@ const ScrollProgress = ({
           <span className="h-5 w-5" />
           <span
             ref={labelRef}
-            className="whitespace-nowrap text-sm font-medium leading-none"
+            className="block max-w-[calc(100vw-7rem)] truncate text-sm font-medium leading-none"
           >
             {label}
           </span>
         </div>
-        <div ref={openRef} className="w-max p-1.5">
+        <div ref={openRef} className="w-max max-w-[calc(100vw-2rem)] p-1.5">
           {sections.map((s) => (
             <div
               key={s.id}
               className="flex items-center gap-3 px-3 py-2 text-sm font-medium leading-none"
             >
-              <span className="h-1.5 w-1.5" />
-              <span className="whitespace-nowrap">{s.label}</span>
+              <span className="h-1.5 w-1.5 shrink-0" />
+              <span className="min-w-0 truncate leading-tight">{s.label}</span>
             </div>
           ))}
         </div>
@@ -272,7 +274,7 @@ const ScrollProgress = ({
                           }}
                         />
                         <motion.span
-                          className="relative whitespace-nowrap"
+                          className="relative min-w-0 truncate leading-tight"
                           initial={
                             reduceMotion
                               ? undefined
@@ -342,7 +344,7 @@ const ScrollProgress = ({
                       <motion.span
                         key={labelVersion.current}
                         data-slot="scroll-progress-label"
-                        className="absolute inset-y-0 left-0 flex items-center whitespace-nowrap text-sm font-medium leading-none text-foreground"
+                        className="absolute inset-0 truncate text-sm font-medium leading-5 text-foreground"
                         initial={
                           reduceMotion
                             ? { opacity: 0 }
