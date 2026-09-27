@@ -58,15 +58,17 @@ export default function PaperPage({ paperId }: { paperId: string }) {
     clearQuoteHighlight()
   }, [])
 
-  const askAbout = useCallback((text: string, range: Range) => {
+  // `range` is set for HTML papers, whose passage stays highlighted. In PDFs,
+  // the reader keeps its own selection.
+  const askAbout = useCallback((text: string, range?: Range) => {
     setQuote(text)
-    showQuoteHighlight(range)
+    if (range) showQuoteHighlight(range)
     setChatOpen(true)
     requestAnimationFrame(() => composerRef.current?.focus())
   }, [])
 
   const explain = useCallback(
-    (text: string, range: Range) => {
+    (text: string, range?: Range) => {
       // One answer at a time. Keep the passage ready in the composer instead.
       if (chat.streaming) {
         askAbout(text, range)
@@ -112,8 +114,14 @@ export default function PaperPage({ paperId }: { paperId: string }) {
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1 overflow-clip">
           <main ref={scrollerRef} className="h-full overflow-y-auto">
-            <div style={{ paddingLeft: inset }}>
-              <PaperView paperId={paperId} articleRef={articleRef} onLoaded={onLoaded} />
+            <div className="h-full" style={{ paddingLeft: inset }}>
+              <PaperView
+                paperId={paperId}
+                articleRef={articleRef}
+                onLoaded={onLoaded}
+                onAsk={askAbout}
+                onExplain={explain}
+              />
             </div>
           </main>
           {minimap.length > 0 && showSidebar && (

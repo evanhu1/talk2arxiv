@@ -1,4 +1,4 @@
-import { decodeEntities, PaperError, processArticle, type LoadedPaper } from './paper'
+import { decodeEntities, NoHtmlError, PaperError, processArticle, type LoadedPaper } from './paper'
 
 // bioRxiv's own full-text page, e.g.
 // https://www.biorxiv.org/content/10.1101/2021.10.04.463034v2.full
@@ -8,7 +8,7 @@ import { decodeEntities, PaperError, processArticle, type LoadedPaper } from './
 // network, so this only works from the deployed Worker (or `wrangler dev
 // --remote`), not from the local dev server.
 const CONTENT_URL = 'https://www.biorxiv.org/content/'
-const USER_AGENT =
+export const USER_AGENT =
   'Mozilla/5.0 (compatible; Talk2bioRxiv/2.0; +https://talk2biorxiv.org) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36'
 
 export async function fetchBiorxivPage(path: string): Promise<{ page: string; url: string }> {
@@ -35,9 +35,8 @@ export async function fetchBiorxivPaper(id: string): Promise<LoadedPaper> {
   const article = extractDiv(page, 'class="article fulltext-view')
   if (!article) {
     // New preprints start as PDF only. bioRxiv adds the full text a few days later.
-    throw new PaperError(
+    throw new NoHtmlError(
       "bioRxiv hasn't published the full text of this paper yet, only the PDF. New preprints usually get it within a few days.",
-      404,
     )
   }
 
@@ -86,7 +85,7 @@ export async function fetchBiorxivPaper(id: string): Promise<LoadedPaper> {
       }),
   )
 
-  return { id, source: 'biorxiv', title, sourceUrl: url, html, text }
+  return { id, source: 'biorxiv', format: 'html', title, sourceUrl: url, html, text }
 }
 
 // Values of <meta name="..." content="..."> tags, in page order.

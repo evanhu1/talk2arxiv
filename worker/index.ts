@@ -3,6 +3,7 @@ import { estimateTokens, MAX_PAPER_TOKENS, paperFitsContext, streamAnswer, valid
 import { isPaperId } from '../shared/papers'
 import { getPaperMeta } from './meta'
 import { getPaper, PaperError, type LoadedPaper } from './paper'
+import { getPdf, pdfDataUrl } from './pdf'
 
 // In production, Vercel hosts the React app and rewrites /api/* to this Worker
 // (see vercel.json). In local dev, Vite serves both from one server.
@@ -17,12 +18,26 @@ export default {
         const body: Paper = {
           id: paper.id,
           source: paper.source,
+          format: paper.format,
           title: paper.title,
           sourceUrl: paper.sourceUrl,
           html: paper.html,
         }
         // s-maxage lets Vercel's CDN, which proxies /api/*, cache papers for a day.
         return Response.json(body, { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } })
+      }
+
+      if (request.method === 'GET' && url.pathname.startsWith('/api/pdf/')) {
+        const id = decodeURIComponent(url.pathname.slice('/api/pdf/'.length))
+        if (!isPaperId(id)) throw new PaperError(`"${id}" is not an arXiv ID or bioRxiv DOI.`, 400)
+        const pdf = await getPdf(id, ctx)
+        return new Response(pdf.body, {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'inline',
+            'Cache-Control': 'public, max-age=86400, s-maxage=2592000',
+          },
+        })
       }
 
       if (request.method === 'GET' && url.pathname.startsWith('/api/meta/')) {
@@ -69,7 +84,16 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext) {
     )
   }
 
-  return streamAnswer(env.OPENROUTER_API_KEY, paper, body.messages)
+  // PDF papers go to the model as the file. The provider fetches it from this
+  // Worker by URL, except in local dev, where it cannot reach localhost.
+  let pdf: string | null = null
+  if (paper.format === 'pdf') {
+    const url = new URL(request.url)
+    const local = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+    pdf = local ? await pdfDataUrl(paper.id, ctx) : `${url.origin}/api/pdf/${paper.id}`
+  }
+
+  return streamAnswer(env.OPENROUTER_API_KEY, paper, body.messages, pdf)
 }
 
 function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper> {

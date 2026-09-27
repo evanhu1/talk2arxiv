@@ -1,9 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useState, type RefObject } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useState, type RefObject } from 'react'
 import DOMPurify from 'dompurify'
 import { FileWarning } from 'lucide-react'
 import type { Paper } from '../../shared/types'
 import { fetchPaper } from '../lib/api'
 import { SOURCE_NAMES, sourceOf, sourcePageUrl, sourcePdfUrl } from '../../shared/papers'
+
+// PDFium is a 5 MB download, so load the PDF reader only for PDF papers.
+const PdfReader = lazy(() => import('./PdfReader'))
 
 export interface OutlineItem {
   id: string
@@ -17,9 +20,12 @@ interface Props {
   paperId: string
   articleRef: RefObject<HTMLDivElement | null>
   onLoaded: (paper: Paper, outline: OutlineItem[]) => void
+  // For PDF papers, whose text selection happens inside the PDF reader.
+  onAsk: (quote: string) => void
+  onExplain: (quote: string) => void
 }
 
-export default function PaperView({ paperId, articleRef, onLoaded }: Props) {
+export default function PaperView({ paperId, articleRef, onLoaded, onAsk, onExplain }: Props) {
   const [state, setState] = useState<State>({ status: 'loading' })
 
   useEffect(() => {
@@ -36,13 +42,32 @@ export default function PaperView({ paperId, articleRef, onLoaded }: Props) {
   const html = useMemo(() => (state.status === 'ready' ? sanitize(state.paper.html) : ''), [state])
 
   useLayoutEffect(() => {
-    if (state.status !== 'ready' || !articleRef.current) return
-    onLoaded(state.paper, buildOutline(articleRef.current))
+    if (state.status !== 'ready') return
+    if (state.paper.format === 'pdf') onLoaded(state.paper, [])
+    else if (articleRef.current) onLoaded(state.paper, buildOutline(articleRef.current))
     // onLoaded is a fresh function each render. Run once per loaded paper.
   }, [state, articleRef])
 
   if (state.status === 'loading') return <Skeleton paperId={paperId} />
   if (state.status === 'error') return <LoadError paperId={paperId} message={state.message} />
+
+  if (state.paper.format === 'pdf') {
+    return (
+      <div className="flex h-full flex-col">
+        <p className="shrink-0 px-4 pt-3 text-center text-[12px] text-faint">
+          {pdfNotice(state.paper)}{' '}
+          <a href={sourcePdfUrl(paperId)} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-muted">
+            Open the original
+          </a>
+        </p>
+        <div className="min-h-0 flex-1">
+          <Suspense fallback={<p className="grid h-full place-items-center text-[13px] text-muted">Opening the PDF…</p>}>
+            <PdfReader url={`/api/pdf/${paperId}`} onAsk={onAsk} onExplain={onExplain} />
+          </Suspense>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto w-full max-w-[860px] px-3 py-4 md:px-8 md:py-8">
@@ -150,3 +175,9 @@ function LoadError({ paperId, message }: { paperId: string; message: string }) {
 }
 
 const sourceName = (paperId: string) => SOURCE_NAMES[sourceOf(paperId) ?? 'arxiv']
+
+function pdfNotice(paper: Paper) {
+  return paper.source === 'biorxiv'
+    ? "bioRxiv hasn't published this paper's full text yet (it usually does within a few days), so this is the PDF."
+    : 'arXiv has no HTML version of this paper, so this is the PDF.'
+}

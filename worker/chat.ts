@@ -43,11 +43,18 @@ export function paperFitsContext(paper: LoadedPaper) {
   return estimateTokens(paper) <= MAX_PAPER_TOKENS
 }
 
+// `pdf` is a URL or data: URL of the paper's PDF, for papers with no HTML version.
 export async function streamAnswer(
   apiKey: string,
   paper: LoadedPaper,
   messages: ChatMessage[],
+  pdf: string | null,
 ): Promise<Response> {
+  const conversation = messages.slice(-MAX_MESSAGES).map(toModelMessage)
+  // Files can only go in user messages, so attach the PDF to the first one.
+  const firstUser = conversation.findIndex((message) => message.role === 'user')
+  if (pdf && firstUser >= 0) conversation[firstUser] = attachPdf(conversation[firstUser], pdf)
+
   const upstream = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
@@ -64,10 +71,7 @@ export async function streamAnswer(
       stream: true,
       // The paper goes first and never changes, so OpenAI caches it
       // across the questions in a conversation.
-      messages: [
-        { role: 'system', content: systemPrompt(paper) },
-        ...messages.slice(-MAX_MESSAGES).map(toModelMessage),
-      ],
+      messages: [{ role: 'system', content: systemPrompt(paper) }, ...conversation],
     }),
   })
 
@@ -95,12 +99,28 @@ function systemPrompt(paper: LoadedPaper) {
 - Use Markdown. Write math in LaTeX: $...$ inline and $$...$$ for display equations.
 - If the paper does not answer the question, say so plainly.
 
-<paper id="${paper.id}" title="${paper.title.replace(/"/g, "'")}">
+${
+    paper.format === 'pdf'
+      ? `The paper, "${paper.title}" (${paper.id}), is attached as a PDF to the reader's first message. Use its figures and tables too.`
+      : `<paper id="${paper.id}" title="${paper.title.replace(/"/g, "'")}">
 ${paper.text}
 </paper>`
+  }`
 }
 
-function toModelMessage(message: ChatMessage) {
+type ContentPart = { type: 'text'; text: string } | { type: 'file'; file: { filename: string; file_data: string } }
+
+interface ModelMessage {
+  role: 'user' | 'assistant'
+  content: string | ContentPart[]
+}
+
+function attachPdf(message: ModelMessage, pdf: string): ModelMessage {
+  const text = typeof message.content === 'string' ? [{ type: 'text' as const, text: message.content }] : message.content
+  return { role: message.role, content: [{ type: 'file', file: { filename: 'paper.pdf', file_data: pdf } }, ...text] }
+}
+
+function toModelMessage(message: ChatMessage): ModelMessage {
   if (message.role === 'user' && message.quote) {
     return {
       role: 'user',

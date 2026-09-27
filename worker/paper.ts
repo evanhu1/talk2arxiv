@@ -1,20 +1,34 @@
-import { sourceOf } from '../shared/papers'
+import { displayId, sourceOf, sourcePdfUrl } from '../shared/papers'
 import type { Paper } from '../shared/types'
 import { fetchArxivPaper } from './arxiv'
 import { fetchBiorxivPaper } from './biorxiv'
+import { getPaperMeta } from './meta'
+import { getPdf } from './pdf'
 
 const CACHE_VERSION = 'v2'
 // A versioned ID (1706.03762v7, 10.1101/...v2) never changes, so keep it longer.
-const cacheTtl = (id: string) => (/v\d+$/.test(id) ? 60 * 60 * 24 * 30 : 60 * 60 * 24)
+// A PDF fallback expires soon: bioRxiv adds the full text within days.
+const cacheTtl = (paper: LoadedPaper) => {
+  if (paper.format === 'pdf') return 60 * 60 * 6
+  return /v\d+$/.test(paper.id) ? 60 * 60 * 24 * 30 : 60 * 60 * 24
+}
 
 export interface LoadedPaper extends Paper {
-  // Plain text with LaTeX math, for the model's context.
+  // Plain text with LaTeX math, for the model's context. Empty for PDF papers,
+  // which go to the model as the PDF itself.
   text: string
 }
 
 export class PaperError extends Error {
   constructor(message: string, readonly status: number) {
     super(message)
+  }
+}
+
+// The paper exists, but only as a PDF. Triggers the PDF fallback.
+export class NoHtmlError extends PaperError {
+  constructor(message: string) {
+    super(message, 404)
   }
 }
 
@@ -40,15 +54,35 @@ async function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper
   const cached = await cache.match(cacheKey)
   if (cached) return cached.json()
 
-  const paper = sourceOf(id) === 'biorxiv' ? await fetchBiorxivPaper(id) : await fetchArxivPaper(id)
+  let paper: LoadedPaper
+  try {
+    paper = sourceOf(id) === 'biorxiv' ? await fetchBiorxivPaper(id) : await fetchArxivPaper(id)
+  } catch (err) {
+    if (!(err instanceof NoHtmlError)) throw err
+    paper = await loadPdfPaper(id, ctx)
+  }
   const response = new Response(JSON.stringify(paper), {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': `public, max-age=${cacheTtl(id)}`,
+      'Cache-Control': `public, max-age=${cacheTtl(paper)}`,
     },
   })
   ctx.waitUntil(cache.put(cacheKey, response))
   return paper
+}
+
+// Fetching the PDF also checks that the paper exists at all.
+async function loadPdfPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper> {
+  const [meta] = await Promise.all([getPaperMeta(id, ctx).catch(() => null), getPdf(id, ctx)])
+  return {
+    id,
+    source: sourceOf(id) ?? 'arxiv',
+    format: 'pdf',
+    title: meta?.title ?? displayId(id),
+    sourceUrl: sourcePdfUrl(id),
+    html: '',
+    text: '',
+  }
 }
 
 export interface ArticleTools {

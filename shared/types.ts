@@ -4,6 +4,9 @@ import type { Source } from './papers'
 export interface Paper {
   id: string
   source: Source
+  // "html" papers come with `html`. "pdf" papers have no HTML version; the app
+  // shows /api/pdf/:id instead.
+  format: 'html' | 'pdf'
   title: string
   // The URL the HTML came from. Relative links in `html` are already absolute.
   sourceUrl: string

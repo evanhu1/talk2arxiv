@@ -1,4 +1,4 @@
-import { extractTitle, PaperError, processArticle, type LoadedPaper } from './paper'
+import { extractTitle, NoHtmlError, processArticle, type LoadedPaper } from './paper'
 
 // arXiv renders most papers since 2023 (and many older ones) as HTML5.
 // ar5iv covers older papers that arXiv has not rendered.
@@ -17,7 +17,7 @@ export async function fetchArxivPaper(id: string): Promise<LoadedPaper> {
     const paper = await fetchFrom(id, source(id))
     if (paper) return paper
   }
-  throw new PaperError('arXiv has no HTML version of this paper. It may only be available as a PDF.', 404)
+  throw new NoHtmlError('arXiv has no HTML version of this paper.')
 }
 
 async function fetchFrom(id: string, url: string): Promise<LoadedPaper | null> {
@@ -38,5 +38,13 @@ async function fetchFrom(id: string, url: string): Promise<LoadedPaper | null> {
   const { html, text } = await processArticle(article, response.url || url)
   if (text.length < MIN_TEXT_LENGTH) return null
 
-  return { id, source: 'arxiv', title: extractTitle(page, text), sourceUrl: response.url || url, html, text }
+  return {
+    id,
+    source: 'arxiv',
+    format: 'html',
+    title: extractTitle(page, text),
+    sourceUrl: response.url || url,
+    html,
+    text,
+  }
 }

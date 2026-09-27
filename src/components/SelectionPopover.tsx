@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { Check, Copy, Lightbulb, Sparkles } from 'lucide-react'
 import { rangeToQuote } from '../lib/selection'
+import SelectionToolbar from './SelectionToolbar'
 
 interface Props {
   containerRef: RefObject<HTMLElement | null>
@@ -17,7 +17,6 @@ interface Selected {
 // A small toolbar that appears over text the reader selects in the paper.
 export default function SelectionPopover({ containerRef, scrollerRef, onAsk, onExplain }: Props) {
   const [selected, setSelected] = useState<Selected | null>(null)
-  const [copied, setCopied] = useState(false)
   const toolbarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -36,7 +35,6 @@ export default function SelectionPopover({ containerRef, scrollerRef, onAsk, onE
         setSelected(null)
         return
       }
-      setCopied(false)
       setSelected({ range: range.cloneRange(), rect: range.getBoundingClientRect() })
     }
 
@@ -93,47 +91,19 @@ export default function SelectionPopover({ containerRef, scrollerRef, onAsk, onE
   }
 
   return (
-    <div
+    <SelectionToolbar
       ref={toolbarRef}
-      role="toolbar"
-      aria-label="Selection actions"
-      onPointerDown={(e) => e.preventDefault()}
       style={{ left, top }}
-      className="animate-pop-in fixed z-50 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-line bg-surface p-1 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
-    >
-      <button
-        type="button"
-        onClick={() => {
-          onAsk(rangeToQuote(selected.range), selected.range)
-          finish()
-        }}
-        className="flex items-center gap-1.5 rounded-lg bg-accent px-2.5 py-1.5 text-white hover:bg-accent-strong"
-      >
-        <Sparkles className="size-3.5" />
-        Ask AI
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          onExplain(rangeToQuote(selected.range), selected.range)
-          finish()
-        }}
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-ink hover:bg-subtle"
-      >
-        <Lightbulb className="size-3.5" />
-        Explain
-      </button>
-      <button
-        type="button"
-        title="Copy"
-        aria-label="Copy"
-        onClick={() => {
-          navigator.clipboard.writeText(rangeToQuote(selected.range)).then(() => setCopied(true))
-        }}
-        className="grid size-8 place-items-center rounded-lg text-muted hover:bg-subtle hover:text-ink"
-      >
-        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-      </button>
-    </div>
+      className="fixed -translate-x-1/2"
+      onAsk={() => {
+        onAsk(rangeToQuote(selected.range), selected.range)
+        finish()
+      }}
+      onExplain={() => {
+        onExplain(rangeToQuote(selected.range), selected.range)
+        finish()
+      }}
+      onCopy={() => navigator.clipboard.writeText(rangeToQuote(selected.range))}
+    />
   )
 }

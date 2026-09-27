@@ -12,6 +12,17 @@
     "deploy:worker": "vite build && wrangler deploy"
   },
   "dependencies": {
+    "@embedpdf/core": "^2.15.1",
+    "@embedpdf/engines": "^2.15.1",
+    "@embedpdf/pdfium": "^2.15.1",
+    "@embedpdf/plugin-document-manager": "^2.15.1",
+    "@embedpdf/plugin-interaction-manager": "^2.15.1",
+    "@embedpdf/plugin-render": "^2.15.1",
+    "@embedpdf/plugin-scroll": "^2.15.1",
+    "@embedpdf/plugin-selection": "^2.15.1",
+    "@embedpdf/plugin-tiling": "^2.15.1",
+    "@embedpdf/plugin-viewport": "^2.15.1",
+    "@embedpdf/plugin-zoom": "^2.15.1",
     "@vercel/functions": "^3.9.9",
     "cn": "^0.4.0",
     "dompurify": "^3.4.16",
