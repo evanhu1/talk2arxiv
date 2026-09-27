@@ -33,6 +33,8 @@ const SITES: Record<Source, { origin: string; name: string; image: string; tagli
   },
 }
 
+const OG_VERSION = 2
+
 const PREVIEW_BOTS =
   /facebookexternalhit|facebot|twitterbot|slackbot|slack-imgproxy|discordbot|telegrambot|whatsapp|linkedinbot|skypeuripreview|pinterest|redditbot|embedly|iframely|vkshare|mastodon|bluesky|cardyb|snapchat|microsoftpreview/i
 
@@ -66,7 +68,8 @@ export default async function middleware(request: Request) {
     pageUrl: site.origin + readerPath(id),
     site,
     type: 'article',
-    image: `${site.origin}/api/og?id=${encodeURIComponent(id)}`,
+    // Bump OG_VERSION when the card design changes: the CDN keeps images for 30 days.
+    image: `${site.origin}/api/og?id=${encodeURIComponent(id)}&v=${OG_VERSION}`,
     imageAlt: meta ? meta.title : site.tagline,
   })
 }

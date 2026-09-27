@@ -27,8 +27,6 @@ export async function GET(request: Request) {
   }
 
   const png = await renderCard({
-    site,
-    sourceLabel: biorxiv ? `bioRxiv · doi:${id}` : `arXiv:${id}`,
     title: meta.title,
     authors: meta.authors ?? [],
     abstract: meta.abstract,
@@ -63,13 +61,11 @@ export async function renderCard(input: CardInput): Promise<Buffer> {
   return new Resvg(svg, { fitTo: { mode: 'width', value: WIDTH } }).render().asPng()
 }
 
-// The link-preview image for a paper: a sheet of paper with its title,
-// authors, and the start of its abstract. Rendered by @vercel/og (Satori),
+// The link-preview image for a paper: its title, authors, and the start of
+// its abstract, like the top of its first page. Rendered by @vercel/og (Satori),
 // which supports a subset of CSS: flexbox, no grid, no line clamping.
 
 interface CardInput {
-  site: string // talk2arxiv.org or talk2biorxiv.org
-  sourceLabel: string // e.g. "bioRxiv · doi:10.1101/2021.10.04.463034v2"
   title: string
   authors: string[]
   abstract: string
@@ -77,90 +73,38 @@ interface CardInput {
 
 const INK = '#1b1a18'
 const MUTED = '#6b6862'
-const FAINT = '#a19d96'
-const ACCENT = '#b31b1b'
-const CANVAS = '#f5f5f3'
-const LINE = '#e5e3df'
 
-function paperCard({ site, sourceLabel, title, authors, abstract }: CardInput): ReactElement {
-  const titleSize = title.length > 90 ? 44 : title.length > 55 ? 50 : 58
+function paperCard({ title, authors, abstract }: CardInput): ReactElement {
+  const titleSize = title.length > 90 ? 50 : title.length > 55 ? 56 : 64
   // Long titles take more lines, so show less abstract.
-  const abstractLength = title.length > 75 ? 260 : title.length > 40 ? 360 : 420
+  const abstractLength = title.length > 75 ? 400 : title.length > 40 ? 440 : 540
 
   return h(
     'div',
-    { style: { ...fill, flexDirection: 'column', background: CANVAS, padding: '44px 56px 0' } },
+    { style: { ...fill, flexDirection: 'column', background: '#fff', padding: '60px 72px 0', position: 'relative' } },
     h(
       'div',
-      {
-        style: {
-          display: 'flex',
-          flexDirection: 'column',
-          // Fill the space above the footer, and clip rather than push it out.
-          flexGrow: 1,
-          flexShrink: 1,
-          minHeight: 0,
-          background: '#fff',
-          border: `1px solid ${LINE}`,
-          borderBottom: 'none',
-          borderRadius: '20px 20px 0 0',
-          padding: '44px 56px 0',
-          overflow: 'hidden',
-          position: 'relative',
-        },
-      },
-      h('div', { style: { ...sans, fontSize: 20, color: FAINT, letterSpacing: 0.3 } }, sourceLabel),
-      h(
-        'div',
-        { style: { ...serif, fontSize: titleSize, fontWeight: 700, lineHeight: 1.15, color: INK, marginTop: 18 } },
-        clip(title, 150),
-      ),
-      authors.length > 0 &&
-        h('div', { style: { ...sans, fontSize: 22, color: MUTED, marginTop: 20 } }, authorLine(authors)),
-      h(
-        'div',
-        { style: { ...serif, fontSize: 24, lineHeight: 1.55, color: '#3a3834', marginTop: 26 } },
-        clip(abstract, abstractLength),
-      ),
-      // Fade the abstract out toward the bottom edge.
-      h('div', {
-        style: {
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 150,
-          backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0), #fff)',
-        },
-      }),
+      { style: { ...serif, fontSize: titleSize, fontWeight: 700, lineHeight: 1.12, color: INK } },
+      clip(title, 150),
     ),
+    authors.length > 0 &&
+      h('div', { style: { ...sans, fontSize: 26, color: MUTED, marginTop: 24 } }, authorLine(authors)),
     h(
       'div',
-      {
-        style: {
-          ...sans,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          height: 84,
-          flexShrink: 0,
-          fontSize: 24,
-          color: MUTED,
-        },
-      },
-      h(
-        'div',
-        { style: { display: 'flex' } },
-        'Talk to this paper at ',
-        h('span', { style: { color: ACCENT, fontWeight: 600 } }, 'talk2'),
-        h('span', { style: { color: INK, fontWeight: 600 } }, site.replace(/^talk2/, '')),
-      ),
-      h(
-        'div',
-        { style: { display: 'flex', alignItems: 'center', color: FAINT, fontSize: 20 } },
-        'Highlight anything. Ask the AI.',
-      ),
+      { style: { ...serif, fontSize: 28, lineHeight: 1.5, color: '#3a3834', marginTop: 32 } },
+      clip(abstract, abstractLength),
     ),
+    // Fade the abstract out toward the bottom edge.
+    h('div', {
+      style: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: 220,
+        backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0), #fff)',
+      },
+    }),
   )
 }
 
