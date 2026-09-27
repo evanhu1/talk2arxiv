@@ -81,5 +81,10 @@
       "destination": "https://www.talk2biorxiv.org/:path+",
       "permanent": true
     }
-  ]
+  ],
+  "functions": {
+    "api/og.ts": {
+      "includeFiles": "node_modules/harfbuzzjs/*.wasm"
+    }
+  }
 }
