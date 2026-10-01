@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Sparkles } from 'lucide-react'
 import type { Citation, CitationSelection, Paper } from '../../shared/types'
 import ChatPanel from '../components/ChatPanel'
 import CitationPreview from '../components/CitationPreview'
@@ -34,7 +33,7 @@ export default function PaperPage({ paperId }: { paperId: string }) {
   const chat = useChat(paperId)
   const isDesktop = useMediaQuery(DESKTOP)
   const [chatOpen, setChatOpen] = useState(() => window.matchMedia(DESKTOP).matches)
-  const [chatWidth, setChatWidth] = useState(() => loadNumber(CHAT_WIDTH_KEY, 440))
+  const [chatWidth, setChatWidth] = useState(() => loadNumber(CHAT_WIDTH_KEY, 396))
   const [draft, setDraft] = useState('')
   const [citationHit, setCitationHit] = useState<CitationHit | null>(null)
   const [citation, setCitation] = useState<CitationSelection | null>(() => chat.messages.findLast((message) => message.role === 'user')?.citation ?? null)
@@ -181,17 +180,6 @@ export default function PaperPage({ paperId }: { paperId: string }) {
       {!isDesktop && <BottomSheet open={chatOpen} onOpenChange={setChatOpen} title="Chat about this paper" hideTitle>{chatPanel}</BottomSheet>}
       {!isDesktop && !chatOpen && !citationHit && <MobileComposer value={draft} onChange={setDraft} onSend={send} disabled={chat.streaming} />}
       {citationHit && <CitationPreview key={citationHit.referenceId} hit={citationHit} paperId={paperId} mobile={!isDesktop} onClose={() => { citationHit.anchor.focus({ preventScroll: true }); setCitationHit(null) }} onAsk={askAboutCitation} />}
-
-      {!chatOpen && isDesktop && (
-        <button
-          type="button"
-          onClick={() => setChatOpen(true)}
-          className="animate-pop-in fixed right-5 bottom-5 z-30 flex items-center gap-2 rounded-full bg-accent px-4 py-3 text-[14px] font-medium text-white shadow-lg hover:bg-accent-strong"
-        >
-          <Sparkles className="size-4" />
-          Ask AI
-        </button>
-      )}
 
       <SelectionPopover containerRef={articleRef} scrollerRef={scrollerRef} onAsk={askAbout} onExplain={explain} />
     </div>
