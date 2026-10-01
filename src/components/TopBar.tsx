@@ -1,4 +1,4 @@
-import { ExternalLink, FileText, MessageSquareText } from 'lucide-react'
+import { ExternalLink, MessageSquareText } from 'lucide-react'
 import { displayId, SOURCE_NAMES, sourceOf, sourcePageUrl, sourcePdfUrl } from '../../shared/papers'
 import GithubIcon from './GithubIcon'
 import HelpButton from './HelpButton'
@@ -8,7 +8,7 @@ interface Props {
   title: string | null
   chatOpen: boolean
   onChatOpenChange: (open: boolean) => void
-  // Phones switch between the paper and the chat instead of showing both.
+  // Phones open chat in a bottom sheet.
   compact: boolean
 }
 
@@ -25,14 +25,14 @@ export default function TopBar({ paperId, title, chatOpen, onChatOpenChange, com
       <HelpButton className="-mr-1" />
 
       {compact ? (
-        // Phones show the paper or the chat, never both. One button goes to the other.
+        // The reader stays behind the mobile chat sheet.
         <button
           type="button"
           onClick={() => onChatOpenChange(!chatOpen)}
           className="flex shrink-0 items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[14px] font-medium text-white hover:bg-accent-strong"
         >
-          {chatOpen ? <FileText className="size-4" /> : <MessageSquareText className="size-4" />}
-          {chatOpen ? 'Paper' : 'Chat'}
+          <MessageSquareText className="size-4" />
+          Chat
         </button>
       ) : (
         <nav className="flex shrink-0 items-center gap-0.5 text-[13px] font-medium text-muted">

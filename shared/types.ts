@@ -27,11 +27,27 @@ export interface ChatMessage {
   content: string
   // A passage the reader highlighted in the paper and asked about.
   quote?: string
+  citation?: CitationSelection
+}
+
+export interface CitationSelection {
+  referenceId: string
+  title: string
+}
+
+export interface Citation extends CitationSelection {
+  referenceText: string
+  authors: string[]
+  abstract: string
+  url?: string
+  paperId?: string
 }
 
 export interface ChatRequest {
   paperId: string
   messages: ChatMessage[]
+  // Regenerate explicitly requests a fresh answer and replaces the cached one.
+  regenerate?: boolean
 }
 
 export interface ApiError {

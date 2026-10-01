@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ChatMessage } from '../../shared/types'
+import type { ChatMessage, CitationSelection } from '../../shared/types'
 import { streamChat } from './api'
 import { loadChat, saveChat, type StoredMessage } from './storage'
 
 export interface Chat {
   messages: StoredMessage[]
   streaming: boolean
-  send: (content: string, quote?: string) => void
+  send: (content: string, quote?: string, citation?: CitationSelection) => void
   retry: () => void
   stop: () => void
   clear: () => void
@@ -26,22 +26,24 @@ export function useChat(paperId: string): Chat {
   useEffect(() => () => abortRef.current?.abort(), [])
 
   const run = useCallback(
-    async (history: StoredMessage[]) => {
+    async (history: StoredMessage[], regenerate = false) => {
       const controller = new AbortController()
       abortRef.current = controller
       setStreaming(true)
       setMessages([...history, { role: 'assistant', content: '' }])
 
       let latest = ''
-      const setAnswer = (content: string, error?: string) =>
+      const setAnswer = (content: string, error?: string) => {
+        if (abortRef.current !== controller) return
         setMessages((current) => [
           ...current.slice(0, -1),
           { role: 'assistant', content, ...(error ? { error } : {}) },
         ])
+      }
 
       try {
         const result = await streamChat(
-          { paperId, messages: toRequestMessages(history) },
+          { paperId, messages: toRequestMessages(history), ...(regenerate ? { regenerate: true } : {}) },
           (text) => {
             latest = text
             setAnswer(text)
@@ -53,19 +55,21 @@ export function useChat(paperId: string): Chat {
         if (controller.signal.aborted) setAnswer(latest)
         else setAnswer(latest, 'Could not reach Talk2Arxiv. Check your connection and try again.')
       } finally {
-        if (abortRef.current === controller) abortRef.current = null
-        setStreaming(false)
+        if (abortRef.current === controller) {
+          abortRef.current = null
+          setStreaming(false)
+        }
       }
     },
     [paperId],
   )
 
   const send = useCallback(
-    (content: string, quote?: string) => {
+    (content: string, quote?: string, citation?: CitationSelection) => {
       if (abortRef.current) return
       const text = content.trim() || (quote ? 'Explain this passage.' : '')
       if (!text) return
-      const message: StoredMessage = { role: 'user', content: text, ...(quote ? { quote } : {}) }
+      const message: StoredMessage = { role: 'user', content: text, ...(quote ? { quote } : {}), ...(citation ? { citation } : {}) }
       run([...messagesRef.current, message])
     },
     [run],
@@ -76,13 +80,15 @@ export function useChat(paperId: string): Chat {
     if (abortRef.current) return
     const history = messagesRef.current
     const lastUser = history.map((m) => m.role).lastIndexOf('user')
-    if (lastUser >= 0) run(history.slice(0, lastUser + 1))
+    if (lastUser >= 0) run(history.slice(0, lastUser + 1), true)
   }, [run])
 
   const stop = useCallback(() => abortRef.current?.abort(), [])
 
   const clear = useCallback(() => {
     abortRef.current?.abort()
+    abortRef.current = null
+    setStreaming(false)
     setMessages([])
   }, [])
 
@@ -93,5 +99,5 @@ export function useChat(paperId: string): Chat {
 function toRequestMessages(history: StoredMessage[]): ChatMessage[] {
   return history
     .filter((m) => m.role === 'user' || m.content.trim())
-    .map(({ role, content, quote }) => (quote ? { role, content, quote } : { role, content }))
+    .map(({ role, content, quote, citation }) => ({ role, content, ...(quote ? { quote } : {}), ...(citation ? { citation } : {}) }))
 }

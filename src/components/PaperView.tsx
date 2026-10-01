@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify'
 import { FileWarning } from 'lucide-react'
 import type { Paper } from '../../shared/types'
 import { fetchPaper } from '../lib/api'
+import { citationAtLink, type CitationHit } from '../lib/citations'
 import { SOURCE_NAMES, sourceOf, sourcePageUrl, sourcePdfUrl } from '../../shared/papers'
 
 // PDFium is a 5 MB download, so load the PDF reader only for PDF papers.
@@ -23,9 +24,10 @@ interface Props {
   // For PDF papers, whose text selection happens inside the PDF reader.
   onAsk: (quote: string) => void
   onExplain: (quote: string) => void
+  onCitation: (citation: CitationHit) => void
 }
 
-export default function PaperView({ paperId, articleRef, onLoaded, onAsk, onExplain }: Props) {
+export default function PaperView({ paperId, articleRef, onLoaded, onAsk, onExplain, onCitation }: Props) {
   const [state, setState] = useState<State>({ status: 'loading' })
 
   useEffect(() => {
@@ -90,7 +92,15 @@ export default function PaperView({ paperId, articleRef, onLoaded, onAsk, onExpl
     <div className="mx-auto w-full max-w-[860px] md:px-8 md:py-8">
       {/* overflow-x-clip: whatever a paper contains, the page never scrolls sideways. */}
       <div className="overflow-x-clip px-5 py-6 md:rounded-2xl md:border md:border-line md:bg-surface md:px-14 md:py-14 md:shadow-[0_1px_2px_rgb(0_0_0/0.03)]">
-        <div ref={articleRef} className="paper" dangerouslySetInnerHTML={{ __html: html }} />
+        <div ref={articleRef} className="paper" onClick={(event) => {
+          if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+          const anchor = (event.target as Element).closest<HTMLAnchorElement>('a[href]')
+          if (!anchor) return
+          const citation = citationAtLink(anchor, event.currentTarget)
+          if (!citation) return
+          event.preventDefault()
+          onCitation(citation)
+        }} dangerouslySetInnerHTML={{ __html: html }} />
       </div>
       <p className="mt-4 px-5 pb-8 text-center text-[12px] text-faint md:px-0 md:pb-0">
         HTML rendering from {sourceName(paperId)}.{' '}

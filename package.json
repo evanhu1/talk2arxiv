@@ -9,7 +9,8 @@
     "preview": "vite build && vite preview",
     "typecheck": "tsc -b",
     "cf-typegen": "wrangler types worker/worker-configuration.d.ts",
-    "deploy:worker": "vite build && wrangler deploy"
+    "deploy:worker": "vite build && wrangler deploy",
+    "test": "vitest run"
   },
   "dependencies": {
     "@embedpdf/core": "^2.15.1",
@@ -23,6 +24,7 @@
     "@embedpdf/plugin-tiling": "^2.15.1",
     "@embedpdf/plugin-viewport": "^2.15.1",
     "@embedpdf/plugin-zoom": "^2.15.1",
+    "@radix-ui/react-popover": "^1.1.23",
     "@resvg/resvg-js": "^2.6.2",
     "@vercel/functions": "^3.9.9",
     "cn": "^0.4.0",
@@ -37,7 +39,8 @@
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
-    "satori": "^0.33.5"
+    "satori": "^0.33.5",
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.60.2",
@@ -50,6 +53,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",
+    "vitest": "^5.0.3",
     "wrangler": "^4.141.0"
   }
 }

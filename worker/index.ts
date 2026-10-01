@@ -1,5 +1,6 @@
 import type { ApiError, ChatRequest, Paper } from '../shared/types'
-import { estimateTokens, MAX_PAPER_TOKENS, paperFitsContext, streamAnswer, validateChatRequest } from './chat'
+import { estimateTokens, MAX_PAPER_TOKENS, paperFitsContext, streamAnswer, validateChatRequest, type CitationContext } from './chat'
+import { getCitation } from './citations'
 import { isPaperId, SITE_ORIGINS } from '../shared/papers'
 import { getPaperMeta } from './meta'
 import { getPaper, PaperError, type LoadedPaper } from './paper'
@@ -12,6 +13,12 @@ export default {
     const url = new URL(request.url)
 
     try {
+      if (request.method === 'GET' && url.pathname === '/api/citation') {
+        const id = url.searchParams.get('paperId') ?? ''
+        if (!isPaperId(id)) throw new PaperError('Invalid paper ID.', 400)
+        const citation = await getCitation(id, url.searchParams.get('referenceId') ?? '', ctx)
+        return Response.json(citation)
+      }
       if (request.method === 'GET' && url.pathname.startsWith('/api/paper/')) {
         const id = decodeURIComponent(url.pathname.slice('/api/paper/'.length))
         const paper = await loadPaper(id, ctx)
@@ -94,7 +101,31 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext) {
     pdf = local ? await pdfDataUrl(paper.id, ctx) : `${SITE_ORIGINS[paper.source]}/api/pdf/${paper.id}`
   }
 
-  return streamAnswer(env.OPENROUTER_API_KEY, paper, body.messages, pdf)
+  let cited: CitationContext | undefined
+  const selected = body.messages.at(-1)?.citation
+  if (selected) {
+    const citation = await getCitation(paper.id, selected.referenceId, ctx)
+    cited = { citation }
+    if (citation.paperId) {
+      try {
+        cited.paper = await loadPaper(citation.paperId, ctx)
+        if (cited.paper.format === 'pdf') {
+          const { hostname } = new URL(request.url)
+          cited.pdf = hostname === 'localhost' || hostname === '127.0.0.1'
+            ? await pdfDataUrl(cited.paper.id, ctx)
+            : `${SITE_ORIGINS[cited.paper.source]}/api/pdf/${cited.paper.id}`
+        }
+      } catch {
+        if (!citation.abstract) return error('Could not load the cited paper. Try again in a moment.', 502)
+      }
+    }
+    if (!cited.paper && !citation.abstract) return error('No text or abstract is available for this citation.', 422)
+    const extraTokens = cited.paper ? estimateTokens(cited.paper) : Math.ceil(citation.abstract.length / 3.2)
+    if (estimateTokens(paper) + extraTokens > MAX_PAPER_TOKENS) {
+      return error('These two papers are too long to fit together in the model’s context.', 413)
+    }
+  }
+  return streamAnswer(env.OPENROUTER_API_KEY, paper, body.messages, pdf, cited, { ctx, regenerate: body.regenerate })
 }
 
 function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper> {

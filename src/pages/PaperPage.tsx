@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Sparkles } from 'lucide-react'
-import type { Paper } from '../../shared/types'
+import type { Citation, CitationSelection, Paper } from '../../shared/types'
 import ChatPanel from '../components/ChatPanel'
+import CitationPreview from '../components/CitationPreview'
+import MobileComposer from '../components/MobileComposer'
+import BottomSheet from '../components/ui/BottomSheet'
+import type { CitationHit } from '../lib/citations'
 import PaperView, { type OutlineItem } from '../components/PaperView'
 import SelectionPopover from '../components/SelectionPopover'
 import TopBar from '../components/TopBar'
@@ -31,6 +35,9 @@ export default function PaperPage({ paperId }: { paperId: string }) {
   const isDesktop = useMediaQuery(DESKTOP)
   const [chatOpen, setChatOpen] = useState(() => window.matchMedia(DESKTOP).matches)
   const [chatWidth, setChatWidth] = useState(() => loadNumber(CHAT_WIDTH_KEY, 440))
+  const [draft, setDraft] = useState('')
+  const [citationHit, setCitationHit] = useState<CitationHit | null>(null)
+  const [citation, setCitation] = useState<CitationSelection | null>(() => chat.messages.findLast((message) => message.role === 'user')?.citation ?? null)
   const [paper, setPaper] = useState<Paper | null>(null)
   const [outline, setOutline] = useState<OutlineItem[]>([])
   const [quote, setQuote] = useState<string | null>(null)
@@ -76,26 +83,41 @@ export default function PaperPage({ paperId }: { paperId: string }) {
       }
       clearQuote()
       setChatOpen(true)
-      chat.send('Explain this passage in simple terms.', text)
+      chat.send('Explain this passage in simple terms.', text, citation ?? undefined)
     },
-    [chat, clearQuote, askAbout],
+    [chat, clearQuote, askAbout, citation],
   )
 
   const send = useCallback(
     (text: string) => {
-      chat.send(text, quote ?? undefined)
+      if (chat.streaming) return
+      setChatOpen(true)
+      chat.send(text, quote ?? undefined, citation ?? undefined)
+      setDraft('')
       clearQuote()
     },
-    [chat, quote, clearQuote],
+    [chat, quote, clearQuote, citation],
   )
+
+  const askAboutCitation = (selected: Citation) => {
+    setCitation({ referenceId: selected.referenceId, title: selected.title })
+    setCitationHit(null)
+    clearQuote()
+    setChatOpen(true)
+    if (isDesktop) requestAnimationFrame(() => composerRef.current?.focus())
+  }
 
   const chatPanel = (
     <ChatPanel
-      chat={chat}
+      chat={{ ...chat, clear: () => { chat.clear(); setCitation(null) } }}
       quote={quote}
       onClearQuote={clearQuote}
       onSend={send}
       composerRef={composerRef}
+      draft={draft}
+      onDraftChange={setDraft}
+      citation={citation}
+      onClearCitation={() => setCitation(null)}
     />
   )
 
@@ -114,13 +136,14 @@ export default function PaperPage({ paperId }: { paperId: string }) {
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1 overflow-clip">
           <main ref={scrollerRef} className="h-full overflow-y-auto">
-            <div className="h-full" style={{ paddingLeft: inset }}>
+            <div className={`${paper?.format === 'pdf' ? 'h-full' : 'min-h-full'} ${!isDesktop ? "pb-28" : ""} ${!isDesktop && outline.length ? "pt-14" : ""}`} style={{ paddingLeft: inset }}>
               <PaperView
                 paperId={paperId}
                 articleRef={articleRef}
                 onLoaded={onLoaded}
                 onAsk={askAbout}
                 onExplain={explain}
+                onCitation={setCitationHit}
               />
             </div>
           </main>
@@ -135,7 +158,8 @@ export default function PaperPage({ paperId }: { paperId: string }) {
               sections={outline}
               containerRef={scrollerRef}
               style={{ left: `calc(50% + ${inset / 2}px)` }}
-              className="absolute bottom-5 z-20 max-w-[calc(100%-2rem)] text-ink"
+              placement={isDesktop ? 'bottom' : 'top'}
+              className={`absolute z-20 max-w-[calc(100%-2rem)] text-ink ${isDesktop ? 'bottom-5' : 'top-3'}`}
             />
           )}
         </div>
@@ -154,7 +178,9 @@ export default function PaperPage({ paperId }: { paperId: string }) {
         )}
       </div>
 
-      {chatOpen && !isDesktop && <div className="fixed inset-x-0 top-12 bottom-0 z-40">{chatPanel}</div>}
+      {!isDesktop && <BottomSheet open={chatOpen} onOpenChange={setChatOpen} title="Chat about this paper" hideTitle>{chatPanel}</BottomSheet>}
+      {!isDesktop && !chatOpen && !citationHit && <MobileComposer value={draft} onChange={setDraft} onSend={send} disabled={chat.streaming} />}
+      {citationHit && <CitationPreview key={citationHit.referenceId} hit={citationHit} paperId={paperId} mobile={!isDesktop} onClose={() => { citationHit.anchor.focus({ preventScroll: true }); setCitationHit(null) }} onAsk={askAboutCitation} />}
 
       {!chatOpen && isDesktop && (
         <button

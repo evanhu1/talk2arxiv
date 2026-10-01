@@ -108,6 +108,7 @@ async function fetchBiorxivMeta(id: string): Promise<PaperMeta> {
 async function fetchArxivMeta(id: string): Promise<PaperMeta> {
   const response = await fetch(ARXIV_API + encodeURIComponent(id), {
     headers: { 'User-Agent': USER_AGENT },
+    signal: AbortSignal.timeout(8000),
   })
   if (!response.ok) throw new PaperError('arXiv is not responding. Try again soon.', 502)
 
@@ -120,7 +121,7 @@ async function fetchArxivMeta(id: string): Promise<PaperMeta> {
   return { id, title, authors, abstract: tagText(entry, 'summary') ?? '' }
 }
 
-function tagText(xml: string, tag: string) {
+export function tagText(xml: string, tag: string) {
   const raw = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`))?.[1]
   if (raw === undefined) return null
   return raw

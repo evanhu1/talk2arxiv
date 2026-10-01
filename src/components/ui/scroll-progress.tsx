@@ -29,6 +29,7 @@ type Size = { width: number; height: number }
 export type ScrollProgressProps = React.ComponentProps<"div"> & {
   sections?: ScrollProgressSection[]
   containerRef?: React.RefObject<HTMLElement | null>
+  placement?: "top" | "bottom"
   offset?: number
 }
 
@@ -37,6 +38,7 @@ const ScrollProgress = ({
   sections = [],
   containerRef,
   offset = 120,
+  placement = "bottom",
   ...props
 }: ScrollProgressProps) => {
   const layoutId = React.useId()
@@ -169,7 +171,7 @@ const ScrollProgress = ({
     <div
       ref={rootRef}
       data-slot="scroll-progress"
-      className={cn("fixed bottom-6 left-1/2 z-50 -translate-x-1/2", className)}
+      className={cn("fixed left-1/2 z-50 -translate-x-1/2", placement === "top" ? "top-6" : "bottom-6", className)}
       {...props}
     >
       <div className="pointer-events-none invisible absolute" aria-hidden>
@@ -202,7 +204,8 @@ const ScrollProgress = ({
         <motion.div
           data-slot="scroll-progress-surface"
           className={cn(
-            "absolute bottom-0 left-1/2 -translate-x-1/2 overflow-hidden border border-border/60 bg-background/70 shadow-lg backdrop-blur-md",
+            "absolute left-1/2 -translate-x-1/2 overflow-hidden border border-border/60 bg-background/70 shadow-lg backdrop-blur-md",
+            placement === "top" ? "top-0" : "bottom-0",
             squircle
           )}
           initial={false}

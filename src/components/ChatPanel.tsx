@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { AlertCircle, ArrowUp, Check, Copy, Quote, RotateCcw, Square, X } from 'lucide-react'
+import type { CitationSelection } from '../../shared/types'
 import type { Chat } from '../lib/useChat'
 import type { StoredMessage } from '../lib/storage'
 import DeleteButton from './ui/delete-button'
@@ -7,10 +8,9 @@ import Markdown from './Markdown'
 import ThinkingOrb from './ThinkingOrb'
 
 const SUGGESTIONS = [
-  'Summarize this paper in a few bullet points',
-  'What problem does it solve, and how?',
-  'Walk me through the method step by step',
-  'What are the main results and limitations?',
+  { label: 'Summarize this paper in a few bullet points', prompt: 'Summarize this paper in a few bullet points.' },
+  { label: 'Map claims to evidence', prompt: 'What does this paper actually establish? Identify its central claims and connect each to the supporting experiments, figures, tables, or proofs. Explain the assumptions and scope of each result, distinguish what was directly tested from the authors’ interpretation, and flag missing evidence or unresolved questions. Cite specific sections and distinguish your own analysis from the paper’s statements.' },
+  { label: 'Walk me through the method step by step', prompt: 'Walk me through the method step by step.' },
 ]
 
 interface Props {
@@ -19,9 +19,13 @@ interface Props {
   onClearQuote: () => void
   onSend: (text: string) => void
   composerRef: RefObject<HTMLTextAreaElement | null>
+  draft: string
+  onDraftChange: (text: string) => void
+  citation: CitationSelection | null
+  onClearCitation: () => void
 }
 
-export default function ChatPanel({ chat, quote, onClearQuote, onSend, composerRef }: Props) {
+export default function ChatPanel({ chat, quote, onClearQuote, onSend, composerRef, draft, onDraftChange, citation, onClearCitation }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
   const stickToBottom = useRef(true)
 
@@ -38,7 +42,7 @@ export default function ChatPanel({ chat, quote, onClearQuote, onSend, composerR
   const lastIndex = chat.messages.length - 1
 
   return (
-    <div className="relative flex h-full flex-col bg-surface">
+    <div className="relative flex min-h-0 flex-col bg-surface md:h-full">
       {chat.messages.length > 0 && (
         <DeleteButton
           onConfirm={chat.clear}
@@ -76,7 +80,13 @@ export default function ChatPanel({ chat, quote, onClearQuote, onSend, composerR
         )}
       </div>
 
+      {citation && <div className="flex shrink-0 items-center gap-2 border-t border-line bg-accent-soft px-4 py-2 text-[12px]">
+        <span className="min-w-0 flex-1"><span className="text-muted">Cited paper</span><span className="block truncate font-medium">{citation.title}</span></span>
+        <button type="button" onClick={onClearCitation} aria-label="Remove cited paper" className="grid size-8 shrink-0 place-items-center rounded-full hover:bg-subtle"><X className="size-4" /></button>
+      </div>}
       <Composer
+        text={draft}
+        setText={onDraftChange}
         quote={quote}
         onClearQuote={onClearQuote}
         onSend={send}
@@ -90,17 +100,16 @@ export default function ChatPanel({ chat, quote, onClearQuote, onSend, composerR
 
 function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
-    <div className="flex min-h-full flex-col justify-end gap-5">
-      <p className="font-serif text-[22px] leading-tight font-semibold">Ask anything about this paper</p>
+    <div className="flex flex-col justify-end gap-5 md:min-h-full">
       <div className="flex flex-col gap-2">
         {SUGGESTIONS.map((suggestion) => (
           <button
-            key={suggestion}
+            key={suggestion.label}
             type="button"
-            onClick={() => onPick(suggestion)}
+            onClick={() => onPick(suggestion.prompt)}
             className="rounded-xl border border-line px-3.5 py-2.5 text-left text-[13.5px] text-ink transition-colors hover:border-faint hover:bg-subtle"
           >
-            {suggestion}
+            {suggestion.label}
           </button>
         ))}
       </div>
@@ -112,6 +121,7 @@ function UserMessage({ message }: { message: StoredMessage }) {
   return (
     <div className="flex justify-end">
       <div className="max-w-[88%] rounded-2xl rounded-br-md bg-subtle px-3.5 py-2.5 text-[14px] leading-relaxed">
+        {message.citation && <p className="mb-2 border-l-2 border-accent pl-2.5 text-[12px] text-muted">About: {message.citation.title}</p>}
         {message.quote && (
           <p className="mb-2 line-clamp-4 border-l-2 border-accent pl-2.5 font-serif text-[13px] text-muted italic">
             {message.quote}
@@ -205,6 +215,8 @@ function IconButton({ label, onClick, children }: { label: string; onClick: () =
 }
 
 function Composer({
+  text,
+  setText,
   quote,
   onClearQuote,
   onSend,
@@ -212,6 +224,8 @@ function Composer({
   onStop,
   inputRef,
 }: {
+  text: string
+  setText: (text: string) => void
   quote: string | null
   onClearQuote: () => void
   onSend: (text: string) => void
@@ -219,7 +233,6 @@ function Composer({
   onStop: () => void
   inputRef: RefObject<HTMLTextAreaElement | null>
 }) {
-  const [text, setText] = useState('')
   const canSend = !streaming && (text.trim().length > 0 || quote !== null)
 
   useLayoutEffect(() => {
@@ -266,7 +279,7 @@ function Composer({
               }
             }}
             placeholder={quote ? 'Ask about the highlighted passage…' : 'Ask about this paper…'}
-            className="max-h-[200px] min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] leading-relaxed outline-none placeholder:text-faint"
+            className="max-h-[200px] min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-[16px] leading-relaxed outline-none placeholder:text-faint md:text-[14px]"
           />
           {streaming ? (
             <button
