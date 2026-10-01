@@ -1,0 +1,5 @@
+# Raw API payloads and full bibliographies stay local and can be regenerated.
+raw/
+*.json
+initial-report.md
+*.context.md

@@ -1,0 +1,55 @@
+[
+  {
+    "name": "Ashish Vaswani",
+    "reason": "Distinctive name, shared seed paper, relatively small bibliography",
+    "seed": { "arxiv": "1706.03762", "title": "Attention Is All You Need" },
+    "checks": [{ "arxiv": "1802.05751" }, { "arxiv": "1803.07416" }, { "arxiv": "1904.09925" }]
+  },
+  {
+    "name": "Niki Parmar",
+    "reason": "Coauthor of the same seed: independent author resolution",
+    "precisionChecks": [{ "provider": "semantic-scholar", "id": "4877c75b2b21bff24bcf2e3a27209d4a1fae3456", "sourceUrl": "https://aclanthology.org/2023.acl-long.841/", "note": "Manually paired KITMUS preprint record with the published paper; source author list excludes Niki Parmar" }],
+    "seed": { "arxiv": "1706.03762", "title": "Attention Is All You Need" },
+    "checks": [{ "arxiv": "1802.05751" }, { "arxiv": "1803.07416" }]
+  },
+  {
+    "name": "Łukasz Kaiser",
+    "aliases": ["Lukasz Kaiser"],
+    "reason": "Diacritic and transliteration handling",
+    "seed": { "arxiv": "1706.03762", "title": "Attention Is All You Need" },
+    "checks": [{ "arxiv": "1511.08228" }, { "arxiv": "1706.05137" }, { "arxiv": "1803.07416" }]
+  },
+  {
+    "name": "Yoshua Bengio",
+    "reason": "Prolific author: pagination and context size",
+    "seed": { "arxiv": "1406.2661", "title": "Generative Adversarial Networks" },
+    "checks": [{ "arxiv": "1409.0473" }, { "arxiv": "1206.5533" }, { "arxiv": "1308.3432" }]
+  },
+  {
+    "name": "Terence Tao",
+    "reason": "Prolific mathematician, legacy arXiv identifiers, older work",
+    "seed": { "arxiv": "math/0404188", "title": "The primes contain arbitrarily long arithmetic progressions" },
+    "checks": [{ "arxiv": "math/0610050" }, { "arxiv": "math/0505402" }]
+  },
+  {
+    "name": "Heng Li",
+    "reason": "Common name with unrelated researchers; computational biology",
+    "seed": { "arxiv": "1708.01492", "title": "Minimap2: pairwise alignment for nucleotide sequences" },
+    "checks": [{ "arxiv": "1303.3997" }, { "arxiv": "2108.03515" }]
+  },
+  {
+    "name": "Richard A. Neher",
+    "aliases": ["Richard Neher", "Richard A Neher"],
+    "reason": "bioRxiv DOI seed, initials, preprint and journal duplicates",
+    "bibliography": "https://neherlab.org/richard-neher.html",
+    "seed": { "doi": "10.1101/224048", "title": "Nextstrain: real-time tracking of pathogen evolution" },
+    "checks": [{ "doi": "10.1101/153494" }, { "doi": "10.1101/408005" }]
+  },
+  {
+    "name": "Nonexistent Test Author Zqxv",
+    "reason": "Negative control: must not pick an arbitrary author from a real paper",
+    "negative": true,
+    "seed": { "arxiv": "1706.03762", "title": "Attention Is All You Need" },
+    "checks": []
+  }
+]
