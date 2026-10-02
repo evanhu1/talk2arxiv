@@ -87,6 +87,13 @@ describe('combined author index', () => {
     expect((await fetchAuthorIndex(paper, meta)).papers).toEqual([])
   })
 
+  it('stops provider requests on a rate limit instead of immediately attempting title fallback', async () => {
+    const fetch = vi.fn(async () => new Response('', { status: 429 }))
+    vi.stubGlobal('fetch', fetch)
+    expect((await fetchAuthorIndex(paper, meta)).status).toBe('unavailable')
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
   it('rejects malformed abstracts and bounds large ones', () => {
     expect(readAbstract({ a: [0], b: [0] })).toBeUndefined()
     expect(readAbstract({ a: [1] })).toBeUndefined()

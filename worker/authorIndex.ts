@@ -8,7 +8,7 @@ import { getPaperMeta } from './meta'
 const API = 'https://api.openalex.org/works'
 const FIELDS = 'id,title,doi,publication_year,cited_by_count,authorships,locations,type'
 const MAX_PAGES = 40
-const CACHE_VERSION = 'v1'
+const CACHE_VERSION = 'v2'
 
 type Authorship = { author: { id: string | null; display_name: string }; raw_author_name?: string }
 export interface IndexWork {
@@ -147,12 +147,18 @@ export function readAbstract(index: IndexWork['abstract_inverted_index']) {
 export async function fetchAuthorIndex(paper: LoadedPaper, meta: PaperMeta, apiKey?: string): Promise<AuthorIndex> {
   const result: AuthorIndex = { status: 'unavailable', authors: [], unresolvedAuthors: [...meta.authors], papers: [], omittedPapers: 0 }
   const signal = AbortSignal.timeout(20_000)
+  let providerUnavailable = false
   async function request<T>(path: string, params: Record<string, string> = {}): Promise<T> {
+    if (providerUnavailable) throw new Error('OpenAlex is unavailable for this request')
     const url = new URL(path)
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
     if (apiKey) url.searchParams.set('api_key', apiKey)
     const response = await fetch(url, { signal, headers: { 'User-Agent': 'Talk2Arxiv/2.0 (+https://talk2arxiv.org)' } })
-    if (!response.ok) throw new Error(`OpenAlex HTTP ${response.status}`)
+    if (!response.ok) {
+      if (response.status === 429 || response.status === 401 || response.status === 403) providerUnavailable = true
+      if (response.status !== 404) console.warn('Author index provider HTTP', response.status)
+      throw new Error(`OpenAlex HTTP ${response.status}`)
+    }
     return response.json() as Promise<T>
   }
   try {
@@ -201,7 +207,7 @@ export async function fetchAuthorIndex(paper: LoadedPaper, meta: PaperMeta, apiK
           seen.add(cursor)
           const page: WorkPage = await request(API, {
             filter: `authorships.author.id:${ids.slice(start, start + 100).join('|')}`,
-            sort: 'cited_by_count:desc', 'per-page': '200', cursor, select: FIELDS,
+            sort: 'cited_by_count:desc', 'per-page': '100', cursor, select: FIELDS,
           })
           pages++
           works.push(...page.results)
@@ -237,7 +243,8 @@ export async function fetchAuthorIndex(paper: LoadedPaper, meta: PaperMeta, apiK
 }
 
 export async function getAuthorIndex(paper: LoadedPaper, ctx: Pick<ExecutionContext, 'waitUntil'>, apiKey?: string): Promise<AuthorIndex> {
-  const key = new Request(`https://cache.talk2arxiv.internal/author-index/${CACHE_VERSION}/${paper.id}`)
+  // Adding a key must immediately retry a previously rate-limited anonymous lookup.
+  const key = new Request(`https://cache.talk2arxiv.internal/author-index/${CACHE_VERSION}/${apiKey ? 'authenticated' : 'anonymous'}/${paper.id}`)
   try {
     const hit = await caches.default.match(key)
     if (hit) return await hit.json()
@@ -246,7 +253,8 @@ export async function getAuthorIndex(paper: LoadedPaper, ctx: Pick<ExecutionCont
   try {
     const meta = await getPaperMeta(paper.id, ctx as ExecutionContext)
     index = await fetchAuthorIndex(paper, meta, apiKey)
-  } catch {
+  } catch (error) {
+    console.warn('Author index metadata failed', error instanceof Error ? error.message : 'Unknown metadata error')
     index = { status: 'unavailable', authors: [], unresolvedAuthors: [], papers: [], omittedPapers: 0 }
   }
   const ttl = index.status === 'ready' ? 86400 : 300
