@@ -26,6 +26,7 @@
     "@embedpdf/plugin-zoom": "^2.15.1",
     "@radix-ui/react-popover": "^1.1.23",
     "@resvg/resvg-js": "^2.6.2",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/functions": "^3.9.9",
     "cn": "^0.4.0",
     "dompurify": "^3.4.16",
