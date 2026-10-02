@@ -3,6 +3,7 @@ import { STREAM_ERROR_MARKER, type ChatMessage, type ChatRequest, type Citation 
 import { validReferenceId } from '../shared/citations'
 import type { LoadedPaper } from './paper'
 import { answerCacheKey, readAnswer, replayAnswer, writeAnswer } from './answerCache'
+import { authorIndexPrompt, type AuthorIndex } from './authorIndex'
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const MODEL = 'openai/gpt-6-luna'
@@ -63,6 +64,7 @@ export async function streamAnswer(
   pdf: string | null,
   cited?: CitationContext,
   cache?: { ctx: Pick<ExecutionContext, 'waitUntil'>; regenerate?: boolean },
+  authorIndex?: AuthorIndex,
 ): Promise<Response> {
   const conversation = messages.slice(-MAX_MESSAGES).map(toModelMessage)
   // Files can only go in user messages, so attach the PDF to the first one.
@@ -80,6 +82,7 @@ export async function streamAnswer(
     max_tokens: 8000,
     stream: true,
     messages: [{ role: 'system', content: systemPrompt(paper) },
+      ...(authorIndex ? [{ role: 'system', content: authorIndexPrompt(authorIndex) }] : []),
       ...(cited ? [{ role: 'system', content: citationPrompt(cited) }] : []), ...conversation],
   })
   const key = cache ? await answerCacheKey(modelRequest) : null

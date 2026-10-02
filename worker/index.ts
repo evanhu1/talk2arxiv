@@ -5,6 +5,7 @@ import { isPaperId, SITE_ORIGINS } from '../shared/papers'
 import { getPaperMeta } from './meta'
 import { getPaper, PaperError, type LoadedPaper } from './paper'
 import { getPdf, pdfDataUrl } from './pdf'
+import { authorIndexPrompt, getAuthorIndex } from './authorIndex'
 
 // In production, Vercel hosts the React app and rewrites /api/* to this Worker
 // (see vercel.json). In local dev, Vite serves both from one server.
@@ -22,6 +23,7 @@ export default {
       if (request.method === 'GET' && url.pathname.startsWith('/api/paper/')) {
         const id = decodeURIComponent(url.pathname.slice('/api/paper/'.length))
         const paper = await loadPaper(id, ctx)
+        ctx.waitUntil(getAuthorIndex(paper, ctx, (env as Env & { OPENALEX_API_KEY?: string }).OPENALEX_API_KEY))
         const body: Paper = {
           id: paper.id,
           source: paper.source,
@@ -125,7 +127,16 @@ async function handleChat(request: Request, env: Env, ctx: ExecutionContext) {
       return error('These two papers are too long to fit together in the model’s context.', 413)
     }
   }
-  return streamAnswer(env.OPENROUTER_API_KEY, paper, body.messages, pdf, cited, { ctx, regenerate: body.regenerate })
+  let authorIndex = await getAuthorIndex(paper, ctx, (env as Env & { OPENALEX_API_KEY?: string }).OPENALEX_API_KEY)
+  const citedTokens = cited?.paper ? estimateTokens(cited.paper) : Math.ceil((cited?.citation.abstract.length ?? 0) / 3.2)
+  if (estimateTokens(paper) + citedTokens + Math.ceil(authorIndexPrompt(authorIndex).length / 3.2) > MAX_PAPER_TOKENS) {
+    authorIndex = { status: 'unavailable', authors: [], unresolvedAuthors: authorIndex.authors, papers: [], omittedPapers: 0 }
+  }
+  const response = await streamAnswer(env.OPENROUTER_API_KEY, paper, body.messages, pdf, cited, { ctx, regenerate: body.regenerate }, authorIndex)
+  response.headers.set('X-Author-Index', authorIndex.status)
+  response.headers.set('X-Author-Index-Papers', String(authorIndex.papers.length))
+  response.headers.set('X-Author-Index-Authors', String(authorIndex.authors.length))
+  return response
 }
 
 function loadPaper(id: string, ctx: ExecutionContext): Promise<LoadedPaper> {

@@ -16,6 +16,7 @@ bioRxiv works the same way: `biorxiv.org/content/10.1101/2021.10.04.463034v2` be
 - **Starting prompts.** Summarize the paper, map its claims to specific evidence, or ask about its method and limitations.
 - **Whole-paper context.** No chunking, embeddings, or vector database. The full paper text goes into the model's context, and OpenAI's prompt cache reuses it for each question.
 - **Cached answers.** Identical questions with the same paper and conversation reuse completed answers, including the starting prompts. Cache hits stream back into chat; **Regenerate** requests a fresh answer. Partial, stopped, and failed generations are never cached.
+- **Author context.** Chat automatically gets one combined index of the paper authors’ other works: up to 100 unique papers ranked by citation count, available abstracts for the top 10, matching authors and links, then `+ N more`. Shared works and preprint/journal versions are merged, and the current paper is excluded.
 - **Local history.** Each paper's chat stays in your browser's `localStorage`.
 
 Papers that are too long for the context window (about 800K tokens) get a clear error message. So do papers that arXiv has not rendered as HTML.
@@ -31,6 +32,8 @@ Papers that are too long for the context window (about 800K tokens) get a clear 
   - `POST /api/chat` puts the paper text and the conversation into one prompt. It sends the prompt to GPT-6 Luna (`openai/gpt-6-luna`) through OpenRouter, on the OpenAI provider, and streams the answer back.
 
 Answer caching uses the Cloudflare Cache API, shared among readers at the same Cloudflare location. Entries expire after seven days (six hours for unversioned PDF URLs). Keys hash the exact model request, including model settings, system prompts, paper text, cited context, quotations, and conversation history; raw questions are not stored in cache URLs. A cache hit skips the model call. Cache failures fall back to normal chat, and responses sent to the browser remain `no-store`. `X-Answer-Cache` reports `HIT`, `MISS`, or `BYPASS` for verification.
+
+Author context uses OpenAlex identities resolved from the current paper’s DOI or exact title and byline. It considers all authors, marks unresolved identities, and uses OR queries across authors before deduplicating by DOI, arXiv ID, and normalized title. Merged versions use their maximum citation count. It starts warming on paper load and caches the combined index for a day (five minutes for incomplete or unavailable results). Retrieval has a 20-second / 40-page budget; a partial lookup is identified as such in the model context, and `+ N more` counts omitted unique works actually retrieved. Provider failures do not prevent ordinary paper chat. The index is part of the answer-cache key and is omitted if it would exceed the paper-context budget. `X-Author-Index`, `X-Author-Index-Authors`, and `X-Author-Index-Papers` expose retrieval status and counts on chat responses. An optional `OPENALEX_API_KEY` Worker secret / local `.dev.vars` entry can authenticate provider requests; the unauthenticated path is supported.
 
 ## Development
 

@@ -15,6 +15,19 @@ const paper: LoadedPaper = {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('cited paper context', () => {
+  it('includes the combined author bibliography alongside the original paper', async () => {
+    const request = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => new Response('data: [DONE]\n'))
+    vi.stubGlobal('fetch', request)
+    await streamAnswer('test-key', paper, [{ role: 'user', content: 'What else have they written?' }], null, undefined, undefined, {
+      status: 'ready', authors: ['Alice', 'Bob'], unresolvedAuthors: [], omittedPapers: 12,
+      papers: [{ title: 'Shared work', authors: ['Alice', 'Bob'], url: 'https://doi.org/10.1/test', year: 2020, citations: 42, abstract: 'Their shared abstract.' }],
+    })
+    const body = JSON.parse(request.mock.calls[0][1]!.body as string)
+    expect(body.messages[0].content).toContain('Original full text.')
+    expect(body.messages[1].content).toContain('Shared work')
+    expect(body.messages[1].content).toContain('+ 12 more')
+    expect(body.messages[1].content).toContain('do not claim to have read')
+  })
   it('marks abstract-only context explicitly', () => {
     const prompt = citationPrompt({ citation })
     expect(prompt).toContain('Only the abstract')
